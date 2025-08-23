@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+  <!-- Agrega esto dentro de tu <head> después del link de Bootstrap -->
+  <style>
+    body {
+      background-color: #e9f7fa;
+      background-image: url('https://i.imgur.com/8NqGnyD.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      padding: 32px 28px 24px 28px;
+      margin-top: 40px;
+      margin-bottom: 40px;
+    }
+    h2, h4, h5 {
+      color: #0dcaf0;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    }
+    .form-control, .form-select {
+      border-radius: 8px;
+      border: 1px solid #b6e0ef;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      background: #f7fcfd;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #0dcaf0;
+      box-shadow: 0 0 0 2px #0dcaf033;
+    }
+    label {
+      font-weight: 500;
+      color: #0a6fa6;
+      margin-bottom: 4px;
+    }
+    .btn-primary, .btn-success, .btn-warning, .btn-secondary {
+      border-radius: 8px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 8px 22px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0dcaf0 60%, #0a6fa6 100%);
+      border: none;
+    }
+    .btn-success {
+      background: linear-gradient(90deg, #1de9b6 60%, #1dcaff 100%);
+      border: none;
+      color: #fff;
+    }
+    .btn-warning {
+      background: linear-gradient(90deg, #ffc107 60%, #ff9800 100%);
+      border: none;
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #b6e0ef;
+      color: #0a6fa6;
+      border: none;
+    }
+    .card {
+      border-radius: 16px;
+      border: none;
+      box-shadow: 0 2px 12px 0 rgba(13,202,240,0.08);
+      background: #fff;
+    }
+    .etapa {
+      margin-bottom: 24px;
+      padding: 18px 12px 8px 12px;
+    }
+    .alert-success {
+      border-radius: 8px;
+      font-size: 1.1rem;
+      background: #e6fff5;
+      color: #0a6fa6;
+      border: 1px solid #1de9b6;
+    }
+    .mt-3 {
+      margin-top: 1.2rem !important;
+    }
+    .mb-2 {
+      margin-bottom: 1rem !important;
+    }
+    .mb-3 {
+      margin-bottom: 1.5rem !important;
+    }
+    .cho-container {
+      margin-top: 18px;
+    }
+    /* Radios y opciones de pago */
+    input[type="radio"] {
+      accent-color: #0dcaf0;
+      margin-right: 6px;
+    }
+    #opcionesPago input[type="file"] {
+      margin-top: 8px;
+    }
+    /* Responsive */
+    @media (max-width: 700px) {
+      .container {
+        padding: 18px 6px 12px 6px;
+        margin-top: 10px;
+      }
+      h2 {
+        font-size: 1.3rem;
+      }
+      h4, h5 {
+        font-size: 1.1rem;
+      }
+    }
+    .etapa { display: none; }
+    .etapa.activa { display: block; }
+  </style>
+</head>
+<body>
+<center>
+  <div class="container mt-4">
+
+    <h2>Formulario de Inscripción</h2>
+
+    <!-- ETAPA 1: Búsqueda de persona -->
+    <div id="etapa1" class="etapa activa card p-3 mb-3">
+  <h4>1. Primer Paso</h4>
+  <p>Seleccione Tipo de Documento e Ingrese el Número</p>
+  <p>Luego presione Buscar y espere los resultados.</p>
+  <p>Complete o Actualice sus Datos, Presione Guardar o Actualizar</p>
+  <p>Una vez vez Guardado, podrá continuar con el siguiente paso.</p>
+  <div class="mb-2">
+    <label>Tipo de Documento:</label>
+    <select class="form-select" id="tipoDocumento">
+      <option selected disabled value="">Tipo de Documento</option>
+      <option value="DNI">DNI</option>
+      <option value="Pasaporte">Pasaporte</option>
+      <option value="Otro">Otro</option>
+    </select>
+  </div>
+
+  <div class="mb-2">
+    <label>Número de Documento:</label>
+    <input type="text" class="form-control" id="numeroDocumento">
+  </div>
+
+  <button class="btn btn-primary" onclick="buscarPersona()">Buscar</button>
+  <input type="hidden" id="idpersona" value="">
+  <div id="datosPersona" class="mt-3"></div>
+
+  <button class="btn btn-success mt-2" onclick="siguienteEtapa(2)">Siguiente</button>
+</div>
+
+    <!-- ETAPA 2: Selección de inscripción -->
+    <div id="etapa2" class="etapa card p-3 mb-3">
+      <h4>2. Seleccionar Inscripción</h4>
+      <p>Seleccione Evento, Carrera o Curso en el que va a Participar</p>
+      <p>Luego Seleccione el taller a Inscribirse</p>
+      <select class="form-select mb-2" id="tipoInscripcion">
+        <option selected disabled value="">Seleccione</option>
+        <% facultades.forEach(function(facultades) { %>
+        <option value="<%= facultades.idfacultad %>"><%= facultades.nombreFacultad %></option>
+        <% }); %>
+      </select>
+      <select class="form-select mb-2" id="materiaTaller">
+        <option selected disabled value="">Seleccione Materia/Taller</option>
+      </select>
+      <button class="btn btn-secondary" onclick="siguienteEtapa(1)">Atrás</button>
+      <button class="btn btn-success" onclick="siguienteEtapa(3)">Siguiente</button>
+    </div>
+
+    <!-- ETAPA 3: Forma de pago -->
+    <div id="etapa3" class="etapa card p-3 mb-3" >
+      <h5>Seleccione una forma de pago:</h5>
+      <p>Recuerde seguir los pasos</p>
+      <p>Una vez cargado el Monto pagado y Comprobante</p>
+      <p>Hacer click en Finalizar y espere confirmación, Presione Aceptar y revise su Correo electrónico</p>
+      <h6 id="montoPagar" class="text-primary"></h6>
+      <div>
+        <input type="radio" name="formaPago" id="transf" value="transferencia" onchange="mostrarPago()">
+        <label for="transf">Transferencia</label>
+        <br>
+        <input type="radio" name="formaPago" id="efectivo" value="efectivo" onchange="mostrarPago()">
+        <label for="efectivo">Efectivo</label>
+      </div>
+      <div id="opcionesPago" class="mt-3"></div>
+  </div>
+    <div id="mensajeFinal" class="alert alert-success mt-3" style="display:none;">
+      Inscripción realizada correctamente. Redirigiendo...
+    </div>
+    
+  </div>
+</center>
+
+<script>
+
+  const tipoP = JSON.parse('<%- JSON.stringify(tipoP || []) %>');
+  const provincias = JSON.parse('<%- JSON.stringify(provincias || []) %>');
+  const paises = JSON.parse('<%- JSON.stringify(paises || []) %>');
+  const facultades = JSON.parse('<%- JSON.stringify(facultades || []) %>');
+  function validarDNI(dni) {
+    return /^\d{8}$/.test(dni);
+  }
+  function validarTexto(texto) {
+    return /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(texto.trim());
+  }
+  function validarCUIL(cuil) {
+    return /^\d{11}$/.test(cuil);
+  }
+
+  function validarEmail(email) {
+    // Formato básico de email
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+async function buscarPersona() {
+  const dni = document.getElementById('numeroDocumento').value;
+  const tipo = document.getElementById('tipoDocumento').value;
+  if (!dni) return alert('Ingrese número de documento');
+  if (!validarDNI(dni)) return alert('El DNI debe tener solo números y 8 dígitos.');
+  if (!tipo) return alert('Seleccione tipo de documento');
+
+  // Llamada a Node.js
+  const res = await fetch('/persona/buscar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dni, tipo })
+  });
+
+  const data = await res.json();
+  const div = document.getElementById('datosPersona');
+  div.innerHTML = '';
+
+  if(data.persona2 && data.persona2.length > 0) {
+    const persona = data.persona2[0];
+    document.getElementById('idpersona').value = persona.idpersona;
+    // Select Provincia
+    let selectProvincia = `<select class="form-select" id="provincias">
+      <option disabled value="">Selec. Provincia</option>`;
+    provincias.forEach(function(provincia) {
+      selectProvincia += `<option value="${provincia.idprovincia}" ${persona.provincia_idprovincia == provincia.idprovincia ? 'selected' : ''}>${provincia.nombreProvincia}</option>`;
+    });
+    selectProvincia += `</select>`;
+
+    // Select País
+    let selectPais = `<select class="form-select" id="paises">
+      <option disabled value="">Selec. País</option>`;
+    paises.forEach(function(pais) {
+      selectPais += `<option value="${pais.idpais}" ${persona.pais_idpais == pais.idpais ? 'selected' : ''}>${pais.pais}</option>`;
+    });
+    selectPais += `</select>`;
+
+    // Select Rol
+    let selectRol = `<select class="form-select" id="tipoP">
+      <option disabled value="">Selec. Rol</option>`;
+    tipoP.forEach(function(rol) {
+      selectRol += `<option value="${rol.idtipoPersona}" ${persona.tipoPersona_idtipoPersona == rol.idtipoPersona ? 'selected' : ''}>${rol.tipoPersona}</option>`;
+    });
+    selectRol += `</select>`;
+    
+
+    // Mostrar datos de la persona
+    div.innerHTML = `
+      <h5>Editar datos:</h5>
+      <div class="row">
+        <div class="col-md-6 mb-2">
+          <label for="apellido">Apellido:</label>
+          <input type="text" id="apellido" placeholder="Apellido" class="form-control" value="${persona.apellido || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" placeholder="Nombre" class="form-control" value="${persona.nombre || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="cuil">Cuil:</label>
+          <input type="text" id="cuil" placeholder="Cuil" class="form-control" value="${persona.cuil || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="genero">Género:</label>
+          <select id="genero" class="form-select">
+            <option value="" disabled selected>Seleccione Género</option>
+            <option value="Femenino" ${persona.genero === 'F' ? 'selected' : ''}>Femenino</option>
+            <option value="Masculino" ${persona.genero === 'M' ? 'selected' : ''}>Masculino</option>
+            <option value="Otro" ${persona.genero === 'X' ? 'selected' : ''}>Otro</option>
+            <option value="Prefiero no decirlo" ${persona.genero === 'PnD' ? 'selected' : ''}>Prefiero no decirlo</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+          <input type="date" id="fechaNacimiento" class="form-control" value="${persona.fechaNacimiento || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="telefono">Teléfono:</label>
+          <input type="text" id="telefono" placeholder="Teléfono" class="form-control" value="${persona.telefono || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="email">Email:</label>
+          <input type="email" id="email" placeholder="Email" class="form-control" value="${persona.correo || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="direccion">Dirección:</label>
+          <input type="text" id="direccion" placeholder="Dirección" class="form-control" value="${persona.direccion || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="localidad">Localidad:</label>
+          <input type="text" id="localidad" placeholder="Localidad" class="form-control" value="${persona.localidad || ''}">
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="provincias">Provincia:</label>
+          ${selectProvincia}
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="paises">País:</label>
+          ${selectPais}
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="tipoP">Rol:</label>
+          ${selectRol}
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="Situacion">Situación:</label>
+          <select id="Situacion" class="form-select">
+            <option value="" disabled selected>Seleccione Situación</option>
+            <option value="Titular" ${persona.situacion === 'Titular' ? 'selected' : ''}>Titular</option>
+            <option value="Suplente" ${persona.situacion === 'Suplente' ? 'selected' : ''}>Suplente</option>
+            <option value="Suplente Cargo Vacante" ${persona.situacion === 'Suplente Cargo Vacante' ? 'selected' : ''}>Suplente Cargo Vacante</option>
+            <option value="Sin Cargo" ${persona.situacion === 'Sin Cargo' ? 'selected' : ''}>Sin Cargo</option>
+            <option value="Otro" ${persona.situacion === 'Otro' ? 'selected' : ''}>Otro</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-warning mt-1" onclick="guardarPersona('${persona.idpersona}')">Actualizar</button>
+    `;
+  } else {
+    // Para nuevo registro, igual pero sin selected
+    let selectProvincia = `<select class="form-select" id="provincias">
+      <option selected disabled value="">Selec. Provincia</option>`;
+    provincias.forEach(function(provincia) {
+      selectProvincia += `<option value="${provincia.idprovincia}">${provincia.nombreProvincia}</option>`;
+    });
+    selectProvincia += `</select>`;
+
+    let selectPais = `<select class="form-select" id="paises">
+      <option selected disabled value="">Selec. País</option>`;
+    paises.forEach(function(pais) {
+      selectPais += `<option value="${pais.idpais}">${pais.pais}</option>`;
+    });
+    selectPais += `</select>`;
+
+    let selectRol = `<select class="form-select" id="tipoP">
+      <option selected disabled value="">Selec. Rol</option>`;
+    tipoP.forEach(function(rol) {
+      selectRol += `<option value="${rol.idtipoPersona}">${rol.tipoPersona}</option>`;
+    });
+    selectRol += `</select>`;
+
+    div.innerHTML = `
+      <h5>Editar datos:</h5>
+      <div class="row">
+        <div class="col-md-6 mb-2">
+          <label for="apellido">Apellido:</label>
+          <input type="text" id="apellido" placeholder="Apellido" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" placeholder="Nombre" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="cuil">Cuil:</label>
+          <input type="text" id="cuil" placeholder="Cuil" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="genero">Género:</label>
+          <select id="genero" class="form-select mb-1">
+            <option value="" disabled selected>Seleccione Género</option>
+            <option value="F">Femenino</option> 
+            <option value="M">Masculino</option>
+            <option value="X">Otro</option>
+            <option value="PnD">Prefiero no decirlo</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+          <input type="date" id="fechaNacimiento" placeholder="Fecha de Nacimiento" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="telefono">Teléfono:</label>
+          <input type="text" id="telefono" placeholder="Teléfono" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="email">Email:</label>
+          <input type="email" id="email" placeholder="Email" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="direccion">Dirección:</label>
+          <input type="text" id="direccion" placeholder="Dirección" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label for="localidad">Localidad:</label>
+          <input type="text" id="localidad" placeholder="Localidad" class="form-control mb-1" >
+        </div>
+        <div class="col-md-6 mb-2">
+          <label>Provincia:</label>
+          ${selectProvincia}
+        </div>
+        <div class="col-md-6 mb-2">
+          <label>País:</label>
+          ${selectPais}
+        </div>
+        <div class="col-md-6 mb-2">
+          <label>Rol:</label>
+          ${selectRol}
+        </div>
+        <div class="col-md-6 mb-2">
+            <label for="Situacion">Situación:</label>
+            <select id="Situacion" class="form-select">
+              <option value="" disabled selected>Seleccione Situación</option>
+              <option value="Titular">Titular</option>
+              <option value="Suplente">Suplente</option>
+              <option value="Suplente Cargo Vacante">Suplente Cargo Vacante</option>
+              <option value="Sin Cargo">Sin Cargo</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+      <button class="btn btn-success mt-1" onclick="guardarPersona()">Guardar</button>
+    `;
+  }
+}
+
+async function guardarPersona(idpersona=null) {
+  const apellido = document.getElementById('apellido').value.trim();
+  const nombre = document.getElementById('nombre').value.trim();
+  const cuil = document.getElementById('cuil').value.trim();
+  const email = document.getElementById('email').value.trim(); 
+
+  const persona = {
+    idpersona,
+    tipo: document.getElementById('tipoDocumento').value,
+    dni: document.getElementById('numeroDocumento').value,
+    apellido: document.getElementById('apellido').value,
+    nombre: document.getElementById('nombre').value,
+    telefono: document.getElementById('telefono').value,
+    direccion: document.getElementById('direccion').value,
+    email: document.getElementById('email').value,
+    cuil: document.getElementById('cuil').value,
+    nacimiento: document.getElementById('fechaNacimiento').value,
+    pais: document.getElementById('paises').value,
+    provincia: document.getElementById('provincias').value,
+    localidad: document.getElementById('localidad').value,
+    fechaAlta: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    genero: document.getElementById('genero').value,
+    tipoP: document.getElementById('tipoP').value,
+    situacion: document.getElementById('Situacion').value,
+    habilitado: 1 // o el valor que corresponda
+    
+  };
+  if (apellido && !validarTexto(apellido)) return alert('El apellido solo debe contener letras.');
+  if (nombre && !validarTexto(nombre)) return alert('El nombre solo debe contener letras.');
+  if (!validarCUIL(cuil)) return alert('El CUIL debe tener solo números y 11 dígitos.');
+  if (!validarEmail(email)) return alert('Ingrese un correo electrónico válido.');
+  const res = await fetch('/persona/guardar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(persona)
+  });
+
+  const data = await res.json();
+  if(data.idpersona) {
+  document.getElementById('idpersona').value = data.idpersona;
+  }
+  alert(data.msg);
+}
+
+
+async function siguienteEtapa(etapa) {
+  if(etapa === 2) {
+    const idpersona = document.getElementById('idpersona').value;
+    if(!idpersona) {
+      alert('Debe registrar o seleccionar una persona antes de continuar.');
+      return;
+    }
+  }
+  if(etapa === 3) {
+    const facultad = document.getElementById('tipoInscripcion').value;
+    const materia = document.getElementById('materiaTaller').value;
+    if(!facultad || !materia) {
+      alert('Debe seleccionar un evento y un taller antes de continuar.');
+      return;
+    } else {
+      const ok = await guardarInscripcion();
+      if(!ok) return; // No avanzar si hubo error
+    }
+  }
+  // Ocultar todas las etapas
+  document.querySelectorAll('.etapa').forEach(e => e.classList.remove('activa'));
+  // Mostrar la etapa seleccionada
+  document.getElementById('etapa' + etapa).classList.add('activa');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('tipoInscripcion').addEventListener('change', cargarMateriasFiltradas);
+});
+
+async function cargarMateriasFiltradas() {
+  const idpersona = document.getElementById('idpersona').value;
+  const idfacultad = document.getElementById('tipoInscripcion').value;
+  if (!idpersona || !idfacultad) return;
+
+  const res = await fetch(`/materias-por-provincia/${idpersona}/${idfacultad}`);
+  const data = await res.json();
+
+  const materiaSelect = document.getElementById('materiaTaller');
+  materiaSelect.innerHTML = '<option selected disabled value="">Seleccione Materia/Taller</option>';
+  data.materias.forEach(materia => {
+    materiaSelect.innerHTML += `<option value="${materia.idmateria}">${materia.materia}</option>`;
+  });
+}
+
+async function guardarInscripcion() {
+  const idpersona = document.getElementById('idpersona').value;
+  const idfacultad = document.getElementById('tipoInscripcion').value;
+  const idmateria = document.getElementById('materiaTaller').value;
+
+  const res = await fetch('/inscripcion/guardar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      idpersona,
+      idmateria,
+      idfacultad
+    })
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    // Mostrar el monto a pagar en etapa 3
+    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}`;
+    // Guardar el idformapago en un input oculto
+    let hidden = document.getElementById('idformapago');
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.id = 'idformapago';
+      hidden.name = 'idformapago';
+      document.body.appendChild(hidden);
+    }
+    hidden.value = data.idformapago;
+    return true;
+  } else {
+    alert(data.msg || 'Error al guardar inscripción');
+    return false;
+  }
+}
+
+function mostrarPago() {
+  const pago = document.querySelector('input[name="formaPago"]:checked').value;
+  const div = document.getElementById('opcionesPago');
+  div.innerHTML = '';
+
+  if (pago === 'transferencia') {
+    div.innerHTML = `
+      <div class="pago-transferencia-info">
+        <p><strong>Alias:</strong> COOPERADORAIES9024</p>
+        <p><strong>CBU:</strong> 1910315455031501206482</p>
+        <p><strong>A nombre de:</strong> A Civ Coop Ies 9 024 Lavalle</p>
+        <p><strong>Cuil:</strong> 30-71742903-2</p>
+        <p><strong>Banco:</strong> Credicoop</p>
+        <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
+          <div class="mb-2">
+            <label for="montoPagado" class="form-label">Ingrese Monto Pagado:</label>
+            <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label for="comprobante" class="form-label">Recuerde cargar el comprobante de pago:</label>
+            <input type="file" name="comprobante" id="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="form-control" required>
+          </div>
+          <button type="button" class="btn btn-success w-100" onclick="finalizarInscripcion()">Finalizar inscripción</button>
+        </form>
+      </div>
+    `;
+  } else if (pago === 'efectivo') {
+    div.innerHTML = `
+      <div class="pago-efectivo-info">
+        <ol>
+          <li><strong>Acérquese a la institución:DOCTOR MORENO Y FLEMING - LAVALLE </strong> </li>
+          <li><strong>Realice el pago en la oficina de tesorería del IES 9-024.</strong></li>
+          <li><strong>Cargue el recibo entregado en tesorería:</strong></li>
+        </ol>
+        <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
+          <div class="mb-2">
+            <label for="montoPagado" class="form-label">Ingrese Monto Pagado:</label>
+            <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label for="comprobante" class="form-label">Cargue el recibo de pago:</label>
+            <input type="file" name="comprobante" id="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="form-control" required>
+          </div>
+          <button type="button" class="btn btn-success w-100" onclick="finalizarInscripcion()">Finalizar inscripción</button>
+        </form>
+      </div>
+    `;
+  }
+}
+
+async function finalizarInscripcion() {
+  // Obtener método de pago seleccionado
+  const metodoPago = document.querySelector('input[name="formaPago"]:checked')?.value;
+  if (!metodoPago) {
+    alert('Seleccione una forma de pago.');
+    return;
+  }
+
+  // Obtener el formulario y los campos
+  const form = document.getElementById('formRecibo');
+  const montoPagado = form.querySelector('#montoPagado')?.value;
+  const comprobante = form.querySelector('#comprobante')?.files[0];
+  const idpersona = document.getElementById('idpersona').value;
+  const idformapago = document.getElementById('idformapago')?.value;
+
+  if (!montoPagado || !comprobante || !idformapago) {
+    alert('Complete todos los campos y cargue el comprobante.');
+    return;
+  }
+
+  // Crear FormData y agregar los campos
+  const formData = new FormData();
+  formData.append('metodoPago', metodoPago);
+  formData.append('montoPagado', montoPagado);
+  formData.append('comprobante', comprobante);
+  formData.append('idpersona', idpersona);
+  formData.append('idformapago', idformapago);
+
+  try {
+    const res = await fetch('/inscripcion/finalizar', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Inscripción finalizada, revise su Correo electrónico');
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    } else {
+      alert(data.msg || 'Error al finalizar inscripción');
+    }
+  } catch (err) {
+    alert('Error de conexión al finalizar inscripción');
+  }
+}
+
+
+</script>
+<div class="cho-container"></div>
+</body>
+</html>
