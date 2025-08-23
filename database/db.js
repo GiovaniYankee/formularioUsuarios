@@ -1,7 +1,7 @@
 const mysql = require('mysql2'); // Asegúrate de usar mysql2
 
 const conexion = mysql.createConnection({
-  host: 'localhost',
+  host: '127.0.0.1:3306',
   database: 'u873315539_BDdatosIes',
   user: 'u873315539_tic9024',
   password: 'equipoTic9024',
