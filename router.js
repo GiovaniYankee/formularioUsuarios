@@ -223,7 +223,7 @@ router.get('/facultad/:idFacultad/materias', async (req, res) => {
   const { idFacultad } = req.params;
   try {
     const [materias] = await conexion.promise().query(
-      'SELECT idmateria, materia FROM materia WHERE facultad_idfacultad = ?',
+      'SELECT idmateria, materia FROM materia WHERE facultad_idfacultad = ? AND habilitado = 1',
       [idFacultad]
     );
     res.json({ materias });
