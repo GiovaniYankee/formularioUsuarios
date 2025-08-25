@@ -393,6 +393,20 @@ async function enviarCorreo(destinatario, asunto, nombrePersona) {
         <p style="font-size: 1.1rem; color: #222;">Este correo es la confirmación de que su inscripción al 14° Congreso de Educación Integral: <b>“Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”</b> ha sido registrada correctamente.</p>
         <p style="font-size: 1.1rem; color: #222;">A continuación, compartimos el cronograma general del evento con los diferentes momentos para que pueda organizar su participación.<br>
         También le compartimos la Resolución de Puntaje del mismo.<br>
+	
+	<ul style="font-size: 1rem; margin-top: 8px;">
+ 	 <li>
+    📄	 <a href="https://drive.google.com/file/d/1hJKs756zA8o7satvFJQs_3Ojs_SarBO5/view?usp=drive_link" target="_blank">
+     	 Descargar Cronograma
+   	 </a>
+ 	 </li>
+ 	 <li>
+    📑	 <a href="https://drive.google.com/file/d/1FsQ500n23nqGE9Tnt6pPbYsBAt1OrlbA/view?usp=drive_link" target="_blank">
+     	 Descargar Resolución de Puntaje
+   	 </a>
+ 	 </li>
+	</ul>
+
         Además, queremos comentar que hemos recibido la declaración de interés tanto departamental como provincial de nuestro congreso. La misma será entregada el día de realización de las actividades.</p>
         <p style="font-size: 1.1rem; color: #0a6fa6; font-weight: bold;">¡Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes!</p>
         <hr style="margin: 32px 0;">
