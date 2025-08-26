@@ -47,9 +47,11 @@ const conexion=require('./database/db');
     });
 });*/
 // ruta de creacion
+router.get('/', (req, res) => {
+  res.render('index'); // Asegúrate de tener index.ejs en tu carpeta views
+});
 
-
-router.get('/',(req, res)=>{
+router.get('/inscripcion',(req, res)=>{
     const queries = [
         'SELECT * FROM provincia',
         'SELECT * FROM tipopersona',
@@ -284,7 +286,7 @@ router.get('/materias-por-provincia/:idpersona/:idfacultad', async (req, res) =>
 
 
 
-const crud = require('./controllers/crud');
+const crud = require('./controllers/incripcionController');
 router.post('/savecategoria', crud.savecategoria);
 
 // Configuración de Multer para guardar archivos en la carpeta 'doc' en la raíz del proyecto
