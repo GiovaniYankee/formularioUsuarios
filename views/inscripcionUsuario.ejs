@@ -564,7 +564,7 @@ async function guardarInscripcion() {
   const data = await res.json();
   if (res.ok) {
     // Mostrar el monto a pagar en etapa 3
-    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}`;
+    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}. Recuerde ingresar el monto correspondiente a su situacion refenciado en el cuadro`;
     // Guardar el idformapago en un input oculto
     let hidden = document.getElementById('idformapago');
     if (!hidden) {
@@ -597,7 +597,7 @@ function mostrarPago() {
         <p><strong>Banco:</strong> Credicoop</p>
         <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
           <div class="mb-2">
-            <label for="montoPagado" class="form-label">Ingrese Monto Pagado:</label>
+            <label for="montoPagado" class="form-label">Ingrese Monto Pagado acorde con su situación referenciado en el cuadro:</label>
             <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
           </div>
           <div class="mb-2">
