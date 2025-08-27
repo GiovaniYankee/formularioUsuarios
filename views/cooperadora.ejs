@@ -174,10 +174,11 @@
           body: JSON.stringify({ idrecibo: reciboIdActual, estado })
         });
         const data = await res.json();
-        if (res.ok) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+        if (res.ok && data.ok) {
           document.getElementById('estadoMsg').textContent = 'Estado actualizado';
           document.getElementById('estadoMsg').style.color = 'green';
-          // Opcional: Actualiza el estado en la tabla sin recargar
+          // Actualiza el estado en la tabla sin recargar
           const fila = Array.from(document.querySelectorAll('tr')).find(tr => tr.querySelector('td') && tr.querySelector('td').textContent == reciboIdActual);
           if (fila) {
             const estadoTd = fila.querySelectorAll('td')[8]; // Ajusta el índice si agregas más columnas
@@ -189,15 +190,28 @@
               estadoTd.innerHTML = '<span style="color:orange;">Rechazado x duplicado</span>';
             }
           }
+          // Cierra el modal después de actualizar
+          const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+          if (modal) modal.hide();
         } else {
           document.getElementById('estadoMsg').textContent = 'Error al actualizar';
           document.getElementById('estadoMsg').style.color = 'red';
+          // Cierra el modal aunque haya error
+          const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+          if (modal) modal.hide();
         }
       } catch (e) {
         document.getElementById('estadoMsg').textContent = 'Error de conexión';
         document.getElementById('estadoMsg').style.color = 'red';
+        // Cierra el modal aunque haya error de conexión
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+        if (modal) modal.hide();
       }
-    });
+      // Refresca la página al cerrar el modal
+      setTimeout(() => {
+        location.reload();
+      }, 500); // Espera 0.5 segundos para que el modal se cierre antes de recargar
+    });   
   </script>
   </body>
 </html>
