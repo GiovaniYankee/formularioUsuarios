@@ -3,15 +3,39 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>Bienvenido al sistema de inscripción</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
-</head>
+  </head>
   <body>
-    <center>
-    <h1>Bienvenido al sistema de inscripcion</h1>
-    </center>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <div class="container mt-5">
+      <center>
+        <h1>Bienvenido al sistema de inscripción</h1>
+        <form id="claveForm" class="mt-4" style="max-width: 350px;">
+          <div class="mb-3">
+            <label for="clave" class="form-label">Ingrese la clave de acceso:</label>
+            <input type="password" class="form-control" id="clave" name="clave" required autocomplete="off">
+          </div>
+          <button type="submit" class="btn btn-primary">Ingresar</button>
+          <div id="mensaje" class="mt-3 text-danger"></div>
+        </form>
+      </center>
+    </div>
+    <script>
+      document.getElementById('claveForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const clave = document.getElementById('clave').value.trim();
+        const mensaje = document.getElementById('mensaje');
+        if (clave === 'formacion2025') {
+          window.location.href = '/IES_9-024/formacion-continua';
+        } else if (clave === 'coope2025') {
+          window.location.href = '/IES_9-024/cooperadora';
+        } else {
+          mensaje.textContent = 'Clave incorrecta. Intente nuevamente.';
+        }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
