@@ -247,7 +247,7 @@ async function buscarPersona() {
   if (!tipo) return alert('Seleccione tipo de documento');
 
   // Llamada a Node.js
-  const res = await fetch('/persona/buscar', {
+  const res = await fetch('/IES_9-024/persona/buscar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dni, tipo })
@@ -485,7 +485,7 @@ async function guardarPersona(idpersona=null) {
   if (nombre && !validarTexto(nombre)) return alert('El nombre solo debe contener letras.');
   if (!validarCUIL(cuil)) return alert('El CUIL debe tener solo números y 11 dígitos.');
   if (!validarEmail(email)) return alert('Ingrese un correo electrónico válido.');
-  const res = await fetch('/persona/guardar', {
+  const res = await fetch('/IES_9-024/persona/guardar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(persona)
@@ -532,7 +532,7 @@ async function cargarMateriasFiltradas() {
   const idfacultad = document.getElementById('tipoInscripcion').value;
   if (!idpersona || !idfacultad) return;
 
-  const res = await fetch(`/materias-por-provincia/${idpersona}/${idfacultad}`);
+  const res = await fetch(`/IES_9-024/materias-por-provincia/${idpersona}/${idfacultad}`);
   const data = await res.json();
 
   const materiaSelect = document.getElementById('materiaTaller');
@@ -551,7 +551,7 @@ async function guardarInscripcion() {
   const idfacultad = document.getElementById('tipoInscripcion').value;
   const idmateria = document.getElementById('materiaTaller').value;
 
-  const res = await fetch('/inscripcion/guardar', {
+  const res = await fetch('/IES_9-024/inscripcion/guardar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -618,7 +618,7 @@ function mostrarPago() {
         </ol>
         <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
           <div class="mb-2">
-            <label for="montoPagado" class="form-label">Ingrese Monto Pagado:</label>
+            <label for="montoPagado" class="form-label">Ingrese Monto Pagado acorde con su situación referenciado en el cuadro:s</label>
             <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
           </div>
           <div class="mb-2">
@@ -652,6 +652,11 @@ async function finalizarInscripcion() {
     return;
   }
 
+  // Deshabilitar el botón para evitar envíos múltiples
+  const btn = form.querySelector('button[type="button"]');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
   // Crear FormData y agregar los campos
   const formData = new FormData();
   formData.append('metodoPago', metodoPago);
@@ -661,7 +666,7 @@ async function finalizarInscripcion() {
   formData.append('idformapago', idformapago);
 
   try {
-    const res = await fetch('/inscripcion/finalizar', {
+    const res = await fetch('/IES_9-024/inscripcion/finalizar', {
       method: 'POST',
       body: formData
     });
@@ -673,9 +678,13 @@ async function finalizarInscripcion() {
       }
     } else {
       alert(data.msg || 'Error al finalizar inscripción');
+      btn.disabled = false;
+      btn.textContent = 'Finalizar inscripción';
     }
   } catch (err) {
     alert('Error de conexión al finalizar inscripción');
+    btn.disabled = false;
+    btn.textContent = 'Finalizar inscripción';
   }
 }
 
