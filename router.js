@@ -13,14 +13,28 @@ const cooperadoraController = require('./controllers/cooperadoraController');
 
 const coopDeudoresController = require('./controllers/coopDeudoresController');
 
+const aulasController = require('./controllers/aulasController');
+
+const materiaController = require('./controllers/materiasController');
+
 router.get('/', (req, res) => {
   res.render('mantenimiento');
 });
 //Rutas Raiz
 router.get('/IES_9-024', raizController.vistaIndex);
 
+//Rutas Materias
+router.get('/IES_9-024/materias', materiaController.vistaMaterias);
+router.post('/IES_9-024/materias/update', materiaController.actualizarMateria);
+
+//Rutas Aula
+router.get('/IES_9-024/aulas', aulasController.vistaAula);
+router.post('/IES_9-024/aulas/update', aulasController.actualizarAula);
+
 //Rutas Formacion Continua
 router.get('/IES_9-024/formacion-continua', formacionContinuaController.vistaFormacionContinua);
+router.post('/IES_9-024/inscripcion/deshabilitar', formacionContinuaController.deshabilitarInscripcion);
+router.post('/IES_9-024/inscripcion/habilitar', formacionContinuaController.habilitarInscripcion);
 
 //Rutas cooperadora
 router.get('/IES_9-024/cooperadora', cooperadoraController.vistaCooperadora);
