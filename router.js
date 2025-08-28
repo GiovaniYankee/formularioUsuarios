@@ -10,23 +10,32 @@ const inscripcionController = require('./controllers/inscripcionController');
 const formacionContinuaController = require('./controllers/formacionContinuaController');
 
 const cooperadoraController = require('./controllers/cooperadoraController');
+
+const coopDeudoresController = require('./controllers/coopDeudoresController');
+
 router.get('/', (req, res) => {
   res.render('mantenimiento');
 });
-
+//Rutas Raiz
 router.get('/IES_9-024', raizController.vistaIndex);
-router.get('/IES_9-024/formacion-continua', formacionContinuaController.vistaFormacionContinua);
-router.get('/IES_9-024/cooperadora', cooperadoraController.vistaCooperadora);
 
+//Rutas Formacion Continua
+router.get('/IES_9-024/formacion-continua', formacionContinuaController.vistaFormacionContinua);
+
+//Rutas cooperadora
+router.get('/IES_9-024/cooperadora', cooperadoraController.vistaCooperadora);
+router.post('/IES_9-024/cooperadora/actualizar-estado-recibo', cooperadoraController.actualizarEstadoRecibo);
+router.get('/IES_9-024/cooperadora/deudores', coopDeudoresController.vistaDeudores);
+router.post('/IES_9-024/cooperadora/deudores/eliminar', coopDeudoresController.eliminarDeuda);
+router.post('/IES_9-024/cooperadora/deudores/habilitar', coopDeudoresController.habilitarDeuda);
+
+//Rutas Inscripcion
 router.get('/IES_9-024/inscripcion', inscripcionController.vistaInscripcion);
 router.post('/IES_9-024/persona/buscar', inscripcionController.buscarPersona);
 router.post('/IES_9-024/persona/guardar', inscripcionController.guardarPersona);
 router.post('/IES_9-024/inscripcion/guardar', inscripcionController.guardarInscripcion);
 router.get('/IES_9-024/facultad/:idFacultad/materias', inscripcionController.materiasPorFacultad);
 router.get('/IES_9-024/materias-por-provincia/:idpersona/:idfacultad', inscripcionController.materiasPorProvincia);
-
-//router.get('/savecategoria', inscripcionController.saveCategoria);
 router.post('/IES_9-024/inscripcion/finalizar', inscripcionController.finalizarInscripcion);
-router.post('/IES_9-024/cooperadora/actualizar-estado-recibo', cooperadoraController.actualizarEstadoRecibo);
 
 module.exports = router;

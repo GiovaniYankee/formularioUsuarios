@@ -10,7 +10,9 @@ exports.vistaCooperadora = async (req, res) => {
          p.idpersona, 
          p.nombre, 
          p.apellido, 
-         p.numDocumento
+         p.numDocumento,
+         p.correo,
+         p.telefono
   FROM recibo r
   LEFT JOIN formapago f ON r.formapago_idformapago = f.idformapago
   LEFT JOIN persona p ON f.persona_idpersona = p.idpersona
@@ -22,8 +24,15 @@ exports.vistaCooperadora = async (req, res) => {
 
 exports.actualizarEstadoRecibo = async (req, res) => {
   const { idrecibo, estado } = req.body;
+  let habilitado = 1;
+  if (estado === 'rechazado' || estado === 'rechazado_duplicado') {
+    habilitado = 0;
+  }
   try {
-    await conexion.promise().query('UPDATE recibo SET detalle = ? WHERE idrecibo = ?', [estado, idrecibo]);
+    await conexion.promise().query(
+      'UPDATE recibo SET detalle = ?, habilitado = ? WHERE idrecibo = ?',
+      [estado, habilitado, idrecibo]
+    );
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
