@@ -42,6 +42,8 @@ router.post('/IES_9-024/cooperadora/actualizar-estado-recibo', cooperadoraContro
 router.get('/IES_9-024/cooperadora/deudores', coopDeudoresController.vistaDeudores);
 router.post('/IES_9-024/cooperadora/deudores/eliminar', coopDeudoresController.eliminarDeuda);
 router.post('/IES_9-024/cooperadora/deudores/habilitar', coopDeudoresController.habilitarDeuda);
+router.post('/IES_9-024/cooperadora/verificar-todos', cooperadoraController.verificarTodos);
+router.post('/IES_9-024/cooperadora/deudores/actualizar', coopDeudoresController.actualizarDetalle);
 
 //Rutas Inscripcion
 router.get('/IES_9-024/inscripcion', inscripcionController.vistaInscripcion);

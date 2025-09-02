@@ -88,7 +88,7 @@ exports.guardarInscripcion = async (req, res) => {
     await conexion.promise().query(
       `INSERT INTO inscripcion 
         (fechaInscripcion, persona_idpersona, fechafinal, detalle, habilitado, facultad_idfacultad, estadoalumno_idestadoalumno) 
-       VALUES (NOW(), ?, NULL, ?, 0, ?, 1)`,
+       VALUES (NOW() - INTERVAL 3 HOUR, ?, NULL, ?, 0, ?, 1)`,
       [idpersona, detalle, idfacultad]
     );
     
@@ -121,7 +121,7 @@ exports.guardarInscripcion = async (req, res) => {
     const [result] = await conexion.promise().query(
       `INSERT INTO formapago
         (fechaInicio, cuotaFinal, detalle, persona_idpersona, importe_idimporte, habilitado) 
-       VALUES (NOW(), ?, ?, ?, ?, 1)`,
+       VALUES (NOW() - INTERVAL 3 HOUR, ?, ?, ?, ?, 1)`,
       [cuotaFinal, idfacultad, idpersona, idimporte]
     );
     const idformapago = result.insertId;
@@ -255,7 +255,7 @@ exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) =
     await conexion.promise().query(
       `INSERT INTO recibo 
         (fechaRecibo, metodoPago, montoPagado, detalle, habilitado, formapago_idformapago, comprobante) 
-       VALUES (NOW(), ?, ?, ?, 1, ?, ?)`,
+       VALUES (NOW() - INTERVAL 3 HOUR, ?, ?, ?, 1, ?, ?)`,
       [metodoPago, montoPagado, detalle, idformapago, comprobanteJson]
     );
 

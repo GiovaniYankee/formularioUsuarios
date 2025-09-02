@@ -19,6 +19,7 @@
         Ver Deudores
         </a>
       </div>
+      <button id="btnVerificar" class="btn btn-info mb-3">Verificar</button>
       <div class="mb-3">
         <label for="filtroEstado" class="form-label"><strong>Filtrar por estado:</strong></label>
         <select id="filtroEstado" class="form-select" style="max-width: 300px;">
@@ -33,7 +34,10 @@
         <table class="table table-bordered table-striped">
           <thead class="table-dark">
             <tr>
+              <th>N°</th>
               <th>ID</th>
+              <th>Apellido</th>
+              <th>Nombre</th>
               <th>Fecha</th>
               <th>Cuota</th>
               <th>Monto</th>
@@ -45,11 +49,14 @@
           </thead>
           <tbody>
             <% if (recibos && recibos.length > 0) { %>
-              <% recibos.forEach(function(recibo) { %>
+              <% recibos.forEach(function(recibo, i) { %>
                 <tr
                   data-estado="<%= recibo.detalle || '' %>" 
                   data-habilitado="<%= recibo.habilitado %>">
+                  <td><%= i + 1 %></td>
                   <td><%= recibo.idrecibo %></td>
+                  <td><%= recibo.apellido || '' %></td>
+                  <td><%= recibo.nombre || '' %></td>
                   <td><%= recibo.fechaRecibo
                         ? new Date(recibo.fechaRecibo).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
                         : '' %></td>
@@ -257,7 +264,37 @@
         }
         tr.style.display = (filtro === 'todos' || mostrar) ? '' : 'none';
       });
+
+      // Renumerar los números de orden después de filtrar
+        let i = 1;
+        document.querySelectorAll('tbody tr').forEach(function(tr) {
+          if (tr.style.display !== 'none') {
+            tr.querySelector('td').textContent = i++;
+          }
+        });
+
     });
+
+    
+    document.getElementById('btnVerificar').addEventListener('click', async function() {
+      if (!confirm('¿Seguro que desea verificar todos los recibos?')) return;
+      try {
+        const res = await fetch('/IES_9-024/cooperadora/verificar-todos', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          alert('Verificación completada.');
+          location.reload();
+        } else {
+          alert('Error en la verificación.');
+        }
+      } catch (e) {
+        alert('Error de conexión.');
+      }
+    });
+
+    
   </script>
   </body>
 </html>

@@ -26,6 +26,7 @@
       <table class="table table-bordered table-striped">
         <thead class="table-dark">
           <tr>
+            <th>N°</th>
             <th>ID FormaPago</th>
             <th>Apellido</th>
             <th>Cuota Final</th>
@@ -37,12 +38,13 @@
         </thead>
         <tbody>
           <% if (formapagos && formapagos.length > 0) { %>
-            <% formapagos.forEach(function(fp) { %>
+            <% formapagos.forEach(function(fp, i) { %>
               <tr data-habilitado="<%= fp.habilitado %>">
+                <td><%= i + 1 %></td>
                 <td><%= fp.idformapago %></td>
                 <td><%= fp.apellido %></td>
                 <td><%= fp.cuotaFinal %></td>
-                <td><%= fp.nombreFacultad %></td>
+                <td><%= fp.idInscripcion %></td>
                 <td><%= fp.habilitado == 1 ? 'Sí' : 'No' %></td>
                 <td>
                 <button class="btn btn-danger btn-sm eliminar-formapago" data-id="<%= fp.idformapago %>">
@@ -63,7 +65,30 @@
       </table>
     </div>
   </div>
-  
+  <!-- Modal Editar Detalle -->
+<div class="modal fade" id="modalEditarDetalle" tabindex="-1" aria-labelledby="modalEditarDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="formEditarDetalle">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEditarDetalleLabel">Editar Detalle</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editIdFormapago" name="idformapago">
+          <div class="mb-3">
+            <label for="editDetalle" class="form-label">Detalle (ID Inscripción)</label>
+            <input type="text" class="form-control" id="editDetalle" name="detalle" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Actualizar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
   document.querySelectorAll('.eliminar-formapago').forEach(function(btn) {
@@ -89,26 +114,41 @@
   });
 
   document.querySelectorAll('.habilitar-formapago').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      if (!confirm('¿Seguro que desea habilitar esta deuda?')) return;
-      const id = this.getAttribute('data-id');
-      try {
-        const res = await fetch('/IES_9-024/cooperadora/deudores/habilitar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idformapago: id })
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          location.reload(); // Recarga la tabla (la página)
-        } else {
-          alert('No se pudo habilitar.');
-        }
-      } catch (e) {
-        alert('Error de conexión.');
-      }
-    });
+  btn.addEventListener('click', function() {
+    const id = this.getAttribute('data-id');
+    // Busca el valor actual del detalle en la fila
+    const tr = this.closest('tr');
+    const detalle = tr.querySelector('td:nth-child(5)').textContent.trim();
+
+    document.getElementById('editIdFormapago').value = id;
+    document.getElementById('editDetalle').value = detalle;
+
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarDetalle'));
+    modal.show();
   });
+});
+
+// Maneja el submit del modal
+document.getElementById('formEditarDetalle').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const idformapago = document.getElementById('editIdFormapago').value;
+  const detalle = document.getElementById('editDetalle').value;
+  try {
+    const res = await fetch('/IES_9-024/cooperadora/deudores/actualizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idformapago, detalle })
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      location.reload();
+    } else {
+      alert('No se pudo actualizar.');
+    }
+  } catch (e) {
+    alert('Error de conexión.');
+  }
+});
 
   document.getElementById('filtroHabilitado').addEventListener('change', function() {
     const filtro = this.value;
@@ -122,8 +162,17 @@
       }
       tr.style.display = (filtro === 'todos' || mostrar) ? '' : 'none';
     });
-  });
 
+    // Renumerar los números de orden después de filtrar
+    let contador = 1;
+    document.querySelectorAll('tbody tr').forEach(function(tr) {
+      if (tr.style.display !== 'none') {
+        tr.querySelector('td').textContent = contador++;
+      }
+    });
+
+  });
+  
 </script>
 </body>
 </html>

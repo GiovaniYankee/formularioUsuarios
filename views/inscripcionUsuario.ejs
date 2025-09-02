@@ -133,6 +133,11 @@
 <body>
 <center>
   <div class="container mt-4">
+    <div id="mensajeFinal" class="alert alert-success text-center fw-bold fs-5 shadow" style="display:none;">
+  <i class="bi bi-check-circle-fill" style="font-size:2rem;color:#198754;"></i><br>
+  ¡Inscripción finalizada!<br>
+  <span class="fw-normal">Por favor, revise su correo electrónico para más información.</span>
+</div>
 
     <h2>Formulario de Inscripción</h2>
 
@@ -564,7 +569,7 @@ async function guardarInscripcion() {
   const data = await res.json();
   if (res.ok) {
     // Mostrar el monto a pagar en etapa 3
-    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}. Recuerde ingresar el monto correspondiente a su situacion refenciado en el cuadro`;
+    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}. Recuerde Aplicar el descuento correspondiente a su situacion referenciado en el cuadro`;
     // Guardar el idformapago en un input oculto
     let hidden = document.getElementById('idformapago');
     if (!hidden) {
@@ -672,7 +677,12 @@ async function finalizarInscripcion() {
     });
     const data = await res.json();
     if (res.ok) {
-      alert('Inscripción finalizada, revise su Correo electrónico');
+      document.getElementById('mensajeFinal').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+  document.getElementById('mensajeFinal').style.display = 'none';
+}, 20000); // 20000 milisegundos = 20 segundos
+
       if (data.redirect) {
         window.location.href = data.redirect;
       }

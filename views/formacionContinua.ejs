@@ -61,6 +61,7 @@
         <table class="table table-bordered table-striped">
           <thead class="table-dark">
             <tr>
+              <th>N°</th>
               <th>ID Inscripción</th>
               <th>Fecha Inscripción</th>
               <th>Apellido y Nombre</th>
@@ -74,8 +75,9 @@
           </thead>
           <tbody>
             <% if (inscripciones && inscripciones.length > 0) { %>
-              <% inscripciones.forEach(function(insc) { %>
+              <% inscripciones.forEach(function(insc, i) { %>
                 <tr data-habilitado="<%= insc.habilitado %>" data-facultad="<%= insc.facultad_idfacultad %>" data-materia="<%= insc.detalle && insc.detalle.idmateria ? insc.detalle.idmateria : '' %>">
+                  <td><%= i + 1 %></td>
                   <td><%= insc.idinscripcion %></td>
                   <td><%= insc.fechaInscripcion 
                     ? new Date(insc.fechaInscripcion).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -86,8 +88,8 @@
                     : '' %></td>
                   <td><%= insc.materia %></td>
                   <td><%= insc.habilitado == 1 ? 'Sí' : 'No'%></td>
-                  <td><%= insc.facultad_idfacultad %></td>
-                  <td><%= insc.estadoalumno_idestadoAlumno %></td>
+                  <td><%= insc.facultad %></td>
+                  <td><%= insc.estadoAlumno %></td>
                   <td>
                     <% if (insc.habilitado == 1) { %>
                       <button class="btn btn-warning btn-sm deshabilitar-insc" data-id="<%= insc.idinscripcion %>">Deshabilitar</button>
@@ -127,6 +129,14 @@
         });
         document.getElementById('filtroMateria').value = '';
         filtrarTabla();
+
+        // Renumerar los números de orden después de filtrar
+      let i = 1;
+      document.querySelectorAll('tbody tr').forEach(function(tr) {
+        if (tr.style.display !== 'none') {
+          tr.querySelector('td').textContent = i++;
+        }
+      });
       });
 
       document.getElementById('filtroMateria').addEventListener('change', filtrarTabla);
@@ -142,6 +152,13 @@
           if (idMateria && mat !== idMateria) mostrar = false;
           tr.style.display = mostrar ? '' : 'none';
         });
+        // Renumerar los números de orden después de filtrar
+      let i = 1;
+      document.querySelectorAll('tbody tr').forEach(function(tr) {
+        if (tr.style.display !== 'none') {
+          tr.querySelector('td').textContent = i++;
+        }
+      });
       }
 
       document.getElementById('filtroHabilitado').addEventListener('change', function() {
@@ -153,6 +170,13 @@
           else if (filtro === '0') mostrar = (habilitado === '0');
           tr.style.display = (filtro === 'todos' || mostrar) ? '' : 'none';
         });
+         // Renumerar los números de orden después de filtrar
+      let i = 1;
+      document.querySelectorAll('tbody tr').forEach(function(tr) {
+        if (tr.style.display !== 'none') {
+          tr.querySelector('td').textContent = i++;
+        }
+      });
       });
 
       // Deshabilitar inscripción
@@ -200,6 +224,8 @@
           }
         });
       });
+
+      
     </script>
   </body>
 </html>

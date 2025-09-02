@@ -2,11 +2,11 @@ const conexion = require("../database/db");
 
 exports.vistaDeudores = async (req, res) => {
   const [formapagos] = await conexion.promise().query(`
-  SELECT f.*, p.apellido, fac.nombreFacultad AS nombreFacultad
+  SELECT f.*, p.apellido, i.idinscripcion AS idInscripcion
   FROM formapago f
   LEFT JOIN persona p ON f.persona_idpersona = p.idpersona
-  LEFT JOIN facultad fac ON f.detalle = fac.idfacultad
-  ORDER BY p.idpersona
+  LEFT JOIN inscripcion i ON f.detalle = i.idinscripcion
+  ORDER BY p.apellido ASC, p.nombre ASC
 `);
 res.render('deudasCoop', { formapagos });
 };
@@ -42,6 +42,19 @@ exports.habilitarDeuda = async (req, res) => {
     await conexion.promise().query(
       "UPDATE recibo SET habilitado = 1, detalle = '' WHERE formapago_idformapago = ?",
       [idformapago]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+};
+
+exports.actualizarDetalle = async (req, res) => {
+  const { idformapago, detalle } = req.body;
+  try {
+    await conexion.promise().query(
+      'UPDATE formapago SET detalle = ?, habilitado = 1 WHERE idformapago = ?',
+      [detalle, idformapago]
     );
     res.json({ ok: true });
   } catch (e) {

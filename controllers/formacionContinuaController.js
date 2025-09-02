@@ -4,9 +4,12 @@ exports.vistaFormacionContinua = async (req, res) => {
   try {
     // Trae inscripciones y persona
     const [inscripciones] = await conexion.promise().query(`
-      SELECT i.*, p.apellido, p.nombre
-      FROM inscripcion i
-      LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
+      SELECT i.*, p.apellido, p.nombre, f.nombreFacultad AS facultad, ea.estadoAlumno
+FROM inscripcion i
+LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
+LEFT JOIN facultad f ON i.facultad_idfacultad = f.idfacultad
+LEFT JOIN estadoalumno ea ON i.estadoalumno_idestadoAlumno = ea.idestadoAlumno
+ORDER BY p.apellido ASC, p.nombre ASC
     `);
      
     // Obtén todos los ids de materia únicos
