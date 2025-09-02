@@ -270,10 +270,10 @@ exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) =
     const detalleFP = fpRows[0].detalle;
     const personaId = fpRows[0].persona_idpersona;
 
-    // 3. Buscar la inscripción correspondiente
+    // 3. Buscar la inscripción correspondiente por idinscripcion
     const [inscRows] = await conexion.promise().query(
-      'SELECT idinscripcion FROM inscripcion WHERE persona_idpersona = ? AND facultad_idfacultad = ?',
-      [personaId, detalleFP]
+      'SELECT idinscripcion FROM inscripcion WHERE idinscripcion = ?',
+      [detalleFP]
     );
     if (inscRows.length === 0) {
       return res.status(404).json({ msg: 'No se encontró la inscripción para actualizar.' });
