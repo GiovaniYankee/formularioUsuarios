@@ -85,14 +85,14 @@ exports.guardarInscripcion = async (req, res) => {
     const detalle = JSON.stringify({ idmateria });
 
     // Guardar inscripción
-    await conexion.promise().query(
+    const [inscResult] =await conexion.promise().query(
       `INSERT INTO inscripcion 
         (fechaInscripcion, persona_idpersona, fechafinal, detalle, habilitado, facultad_idfacultad, estadoalumno_idestadoalumno) 
        VALUES (NOW() - INTERVAL 3 HOUR, ?, NULL, ?, 0, ?, 1)`,
       [idpersona, detalle, idfacultad]
     );
     
-
+      const idinscripcion = inscResult.insertId;
     // Buscar el tipo de facultad para una facultad dada
       const [facultadRows] = await conexion.promise().query(
         'SELECT tipoFacultad_idtipoFacultad FROM facultad WHERE idfacultad = ? LIMIT 1',
@@ -122,7 +122,7 @@ exports.guardarInscripcion = async (req, res) => {
       `INSERT INTO formapago
         (fechaInicio, cuotaFinal, detalle, persona_idpersona, importe_idimporte, habilitado) 
        VALUES (NOW() - INTERVAL 3 HOUR, ?, ?, ?, ?, 1)`,
-      [cuotaFinal, idfacultad, idpersona, idimporte]
+      [cuotaFinal, idinscripcion, idpersona, idimporte]
     );
     const idformapago = result.insertId;
     await verificarYDeshabilitarMateria(idmateria);
