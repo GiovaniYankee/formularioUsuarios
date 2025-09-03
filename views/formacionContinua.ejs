@@ -76,7 +76,10 @@
           <tbody>
             <% if (inscripciones && inscripciones.length > 0) { %>
               <% inscripciones.forEach(function(insc, i) { %>
-                <tr data-habilitado="<%= insc.habilitado %>" data-facultad="<%= insc.facultad_idfacultad %>" data-materia="<%= insc.detalle && insc.detalle.idmateria ? insc.detalle.idmateria : '' %>">
+                <tr data-habilitado="<%= insc.habilitado %>"
+                  data-facultad="<%= insc.facultad_idfacultad %>"
+                  data-materia="<%= insc.detalle && insc.detalle.idmateria ? insc.detalle.idmateria : '' %>"
+                  class="<%= insc.estadoAlumno === 'Regular' ? 'table-success' : '' %>">
                   <td><%= i + 1 %></td>
                   <td><%= insc.idinscripcion %></td>
                   <td><%= insc.fechaInscripcion 

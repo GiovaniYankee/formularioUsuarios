@@ -152,7 +152,7 @@ async function verificarYDeshabilitarMateria(idmateria) {
   const [inscriptosRows] = await conexion.promise().query(
     `SELECT COUNT(*) AS cantidad 
      FROM inscripcion 
-     WHERE JSON_EXTRACT(detalle, '$.idmateria') = ?`,
+     WHERE JSON_EXTRACT(detalle, '$.idmateria') = ? AND habilitado = 1`,
     [idmateria]
   );
   const cantidadInscriptos = inscriptosRows[0].cantidad;
@@ -302,7 +302,7 @@ exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) =
       );
     }
 
-    res.json({ msg: 'Recibo guardado, comprobante subido, habilitación actualizada y correo enviado.', redirect: 'https://ies9024-infd.mendoza.edu.ar/sitio/' });
+    res.json({ msg: 'Recibo guardado, comprobante subido, habilitación actualizada y correo enviado. Revise monto, solo ingrese números.', redirect: 'https://ies9024-infd.mendoza.edu.ar/sitio/' });
   } catch (err) {
     res.status(500).json({ msg: 'Error al guardar recibo, actualizar inscripción o enviar correo.' });
   }
