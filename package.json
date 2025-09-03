@@ -12,10 +12,17 @@
   "dependencies": {
     "bootstrap-icons": "^1.11.3",
     "ejs": "^3.1.10",
+<<<<<<< HEAD
     "express": "^4.19.2",
     "mercadopago": "^2.8.0",
     "multer": "^2.0.2",
     "mysql2": "^3.10.1",
+=======
+    "express": "^4.21.2",
+    "mercadopago": "^2.8.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.14.3",
+>>>>>>> 3724290e162e47c7a1535c9262b8a1f9462a6806
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.4"
   }

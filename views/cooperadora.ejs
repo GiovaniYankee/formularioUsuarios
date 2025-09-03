@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bienvenido al sistema de inscripción</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="container mt-5">
+      <center>
+        <h1>Bienvenido al sistema de COOPERADORAIES9024</h1>
+      </center>
+      <div class="container mt-4">
+        <a href="/IES_9-024/cooperadora/deudores" class="btn btn-outline-primary mb-3">
+        Ver Deudores
+        </a>
+      </div>
+      <button id="btnVerificar" class="btn btn-info mb-3">Verificar</button>
+      <div class="mb-3">
+        <label for="filtroEstado" class="form-label"><strong>Filtrar por estado:</strong></label>
+        <select id="filtroEstado" class="form-select" style="max-width: 300px;">
+          <option value="todos">Todos</option>
+          <option value="aprobado">Aprobados</option>
+          <option value="rechazado">Rechazados</option>
+          <option value="rechazado_duplicado">Rechazados x duplicado</option>
+          <option value="">En Espera</option>
+        </select>
+      </div>
+      <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+          <thead class="table-dark">
+            <tr>
+              <th>N°</th>
+              <th>ID</th>
+              <th>Apellido</th>
+              <th>Nombre</th>
+              <th>Fecha</th>
+              <th>Cuota</th>
+              <th>Monto</th>
+              <th>Metodo</th>
+              <th>N°Deuda</th>
+              <th>Detalle</th>
+              <th>Comprobante</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (recibos && recibos.length > 0) { %>
+              <% recibos.forEach(function(recibo, i) { %>
+                <tr
+                  data-estado="<%= recibo.detalle || '' %>" 
+                  data-habilitado="<%= recibo.habilitado %>">
+                  <td><%= i + 1 %></td>
+                  <td><%= recibo.idrecibo %></td>
+                  <td><%= recibo.apellido || '' %></td>
+                  <td><%= recibo.nombre || '' %></td>
+                  <td><%= recibo.fechaRecibo
+                        ? new Date(recibo.fechaRecibo).toLocaleString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                        : '' %></td>
+                  <td><%= recibo.numCuota %></td>
+                  <td><%= recibo.montoPagado %></td>
+                  <td><%= recibo.metodoPago %></td>
+                  <td><%= recibo.formapago_idformapago %></td>
+                  <td><%= recibo.detalle || '' %></td>
+                  <td>
+                    <% if (recibo.comprobante) { 
+                        let ruta = '';
+                        try {
+                          // Si recibo.comprobante es un objeto, úsalo directamente
+                          let obj = recibo.comprobante;
+                          // Si viene como string, parsea el JSON
+                          if (typeof obj === 'string') obj = JSON.parse(obj);
+                          if (obj.ruta) {
+                            const nombreArchivo = obj.ruta.split(/[\\/]/).pop();
+                            ruta = '/doc/' + nombreArchivo;
+                          }
+                        } catch(e) {}
+                    %>
+                      <a href="#"
+                        class="ver-comprobante"
+                        data-idrecibo="<%= recibo.idrecibo %>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalComprobante"
+                        data-img="<%= ruta %>"
+                        data-deuda="<%= recibo.formapago_idformapago %>"
+                        data-idpersona="<%= recibo.persona_idpersona %>"
+                        data-nombre="<%= recibo.nombre %>"
+                        data-apellido="<%= recibo.apellido %>"
+                        data-dni="<%= recibo.numDocumento %>"
+                        data-correo="<%= recibo.correo %>"
+                        data-tel="<%= recibo.telefono %>">
+                        Ver
+                      </a>
+                    <% } else { %>
+                      Sin comprobante
+                    <% } %>
+                  </td>
+                  <!-- Agrega más celdas según tus campos -->
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="4" class="text-center">No hay recibos registrados.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Modal para mostrar la imagen del comprobante -->
+  <div class="modal fade" id="modalComprobante" tabindex="-1" aria-labelledby="modalComprobanteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalComprobanteLabel">Comprobante</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="px-3 pt-2">
+          <strong>N° Deuda:</strong> <span id="modalDeuda"></span><br>
+          <strong>ID Persona:</strong> <span id="modalIdPersona"></span><br>
+          <strong>Nombre:</strong> <span id="modalNombre"></span>
+          <strong>Apellido:</strong> <span id="modalApellido"></span><br>
+          <strong>DNI:</strong> <span id="modalDni"></span><br>
+          <strong>Correo:</strong> <span id="modalCorreo"></span><br>
+          <strong>Tel:</strong> <span id="modalTel"></span>
+          <div class="mb-3 mt-2">
+          <label for="estadoRecibo" class="form-label"><strong>Estado del recibo:</strong></label>
+          <select id="estadoRecibo" class="form-select">
+            <option value="aprobado" style="color:green;">Aprobado</option>
+            <option value="rechazado" style="color:red;">Rechazado</option>
+            <option value="rechazado_duplicado" style="color:orange;">Rechazado x duplicado</option>
+          </select>
+        </div>
+        <button id="btnActualizarEstado" class="btn btn-primary btn-sm">Actualizar estado</button>
+        <span id="estadoMsg" class="ms-2"></span>
+        </div>
+        <div class="modal-body text-center">
+        <img id="imgComprobante" src="" alt="Comprobante" class="img-fluid" style="max-height:400px; display:none;">
+        <iframe id="pdfComprobante" src="" style="width:100%;height:500px;display:none;" frameborder="0"></iframe>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let reciboIdActual=null;
+      document.addEventListener('DOMContentLoaded', function() {
+      var modal = document.getElementById('modalComprobante');
+      var img = document.getElementById('imgComprobante');
+      var pdf = document.getElementById('pdfComprobante');
+      var deuda = document.getElementById('modalDeuda');
+      var idpersona = document.getElementById('modalIdPersona');
+      var nombre = document.getElementById('modalNombre');
+      var apellido = document.getElementById('modalApellido');
+      var dni = document.getElementById('modalDni');
+      var correo = document.getElementById('modalCorreo');
+      var tel = document.getElementById('modalTel');
+      document.querySelectorAll('.ver-comprobante').forEach(function(link) {
+        link.addEventListener('click', function() {
+         var ruta = this.getAttribute('data-img');
+          if (ruta && ruta.toLowerCase().endsWith('.pdf')) {
+            img.style.display = 'none';
+            pdf.style.display = 'block';
+            pdf.src = ruta;
+          } else {
+            pdf.style.display = 'none';
+            img.style.display = 'block';
+            img.src = ruta;
+          }
+          deuda.textContent = this.getAttribute('data-deuda') || '';
+          idpersona.textContent = this.getAttribute('data-idpersona') || '';
+          nombre.textContent = this.getAttribute('data-nombre') || '';
+          apellido.textContent = this.getAttribute('data-apellido') || '';
+          dni.textContent = this.getAttribute('data-dni') || '';
+          reciboIdActual = this.getAttribute('data-idrecibo');
+          correo.textContent = this.getAttribute('data-correo') || '';
+          tel.textContent = this.getAttribute('data-tel') || '';
+          document.getElementById('estadoMsg').textContent = '';
+        });
+      });
+      modal.addEventListener('hidden.bs.modal', function () {
+        img.src = '';
+        pdf.src = '';
+        img.style.display = 'none';
+        pdf.style.display = 'none';
+        deuda.textContent = '';
+        idpersona.textContent = '';
+        nombre.textContent = '';
+        apellido.textContent = '';
+        dni.textContent = '';
+        correo.textContent
+        tel.textContent = '';
+      });
+
+    });
+
+    document.getElementById('btnActualizarEstado').addEventListener('click', async function() {
+      const estado = document.getElementById('estadoRecibo').value;
+      if (!reciboIdActual) return;
+      try {
+        const res = await fetch('/IES_9-024/cooperadora/actualizar-estado-recibo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idrecibo: reciboIdActual, estado })
+        });
+        const data = await res.json();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+        if (res.ok && data.ok) {
+          document.getElementById('estadoMsg').textContent = 'Estado actualizado';
+          document.getElementById('estadoMsg').style.color = 'green';
+          // Actualiza el estado en la tabla sin recargar
+          const fila = Array.from(document.querySelectorAll('tr')).find(tr => tr.querySelector('td') && tr.querySelector('td').textContent == reciboIdActual);
+          if (fila) {
+            const estadoTd = fila.querySelectorAll('td')[8]; // Ajusta el índice si agregas más columnas
+            if (estado === 'aprobado') {
+              estadoTd.innerHTML = '<span style="color:green;">Aprobado</span>';
+            } else if (estado === 'rechazado') {
+              estadoTd.innerHTML = '<span style="color:red;">Rechazado</span>';
+            } else if (estado === 'rechazado_duplicado') {
+              estadoTd.innerHTML = '<span style="color:orange;">Rechazado x duplicado</span>';
+            }
+          }
+          // Cierra el modal después de actualizar
+          const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+          if (modal) modal.hide();
+        } else {
+          document.getElementById('estadoMsg').textContent = 'Error al actualizar';
+          document.getElementById('estadoMsg').style.color = 'red';
+          // Cierra el modal aunque haya error
+          const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+          if (modal) modal.hide();
+        }
+      } catch (e) {
+        document.getElementById('estadoMsg').textContent = 'Error de conexión';
+        document.getElementById('estadoMsg').style.color = 'red';
+        // Cierra el modal aunque haya error de conexión
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprobante'));
+        if (modal) modal.hide();
+      }
+      // Refresca la página al cerrar el modal
+      setTimeout(() => {
+        location.reload();
+      }, 500); // Espera 0.5 segundos para que el modal se cierre antes de recargar
+    });
+    
+    document.getElementById('filtroEstado').addEventListener('change', function() {
+      const filtro = this.value;
+      document.querySelectorAll('tbody tr').forEach(function(tr) {
+        const estado = tr.getAttribute('data-estado');
+        const habilitado = tr.getAttribute('data-habilitado');
+        let mostrar = true;
+        if (filtro === 'aprobado') {
+          mostrar = (estado === 'aprobado' && habilitado === '1');
+        } else if (filtro === 'rechazado') {
+          mostrar = (estado === 'rechazado' && habilitado === '0');
+        } else if (filtro === 'rechazado_duplicado') {
+          mostrar = (estado === 'rechazado_duplicado' && habilitado === '0');
+        } else if (filtro === '') {
+          mostrar = (estado === '' && habilitado === '1');
+        }
+        tr.style.display = (filtro === 'todos' || mostrar) ? '' : 'none';
+      });
+
+      // Renumerar los números de orden después de filtrar
+        let i = 1;
+        document.querySelectorAll('tbody tr').forEach(function(tr) {
+          if (tr.style.display !== 'none') {
+            tr.querySelector('td').textContent = i++;
+          }
+        });
+
+    });
+
+    
+    document.getElementById('btnVerificar').addEventListener('click', async function() {
+      if (!confirm('¿Seguro que desea verificar todos los recibos?')) return;
+      try {
+        const res = await fetch('/IES_9-024/cooperadora/verificar-todos', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          alert('Verificación completada.');
+          location.reload();
+        } else {
+          alert('Error en la verificación.');
+        }
+      } catch (e) {
+        alert('Error de conexión.');
+      }
+    });
+
+    
+  </script>
+  </body>
+</html>
