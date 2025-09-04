@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lector QR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      background: #f6f8fa;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 480px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #e0e0e0;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    #reader {
+      width: 100% !important;
+      min-height: 320px;
+      margin-bottom: 16px;
+    }
+    #result {
+      font-size: 1.2rem;
+      color: #198754;
+      margin-top: 16px;
+      word-break: break-all;
+    }
+    #lecturas {
+      margin-top: 24px;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #f1f3f4;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .lectura-item {
+      border-bottom: 1px solid #e0e0e0;
+      padding: 6px 0;
+    }
+    .btn {
+      margin-top: 16px;
+      padding: 8px 24px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #0dcaf0;
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover {
+      background: #0a6fa6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Botón para ir a asistencia -->
+    <a href="/IES_9-024/asistencia" class="btn" style="margin-bottom: 16px;">Ir a asistencia</a>
+
+    <h2>Lector de Código QR</h2>
+
+    <!-- Filtro de materias -->
+    <div style="margin: 24px 0;">
+      <label for="filtro-acred" style="font-weight:bold;">Tipo de acreditación:</label>
+      <select id="filtro-acred" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <option value="A1">Acreditación General</option>
+        <option value="AE">Evaluación Final</option>
+        <% if (materias && materias.length > 0) { %>
+          <% materias.forEach(function(m) { %>
+            <option value="AT-<%= m.idmateria %>"><%= m.materia %></option>
+          <% }); %>
+        <% } %>
+      </select>
+    </div>
+
+    <div id="reader"></div>
+    <div id="result"></div>
+    <button class="btn" onclick="resetScanner()">Reiniciar lector</button>
+
+    <!-- Buscar por DNI -->
+    <div style="margin: 24px 0;">
+      <input type="text" id="dni-input" placeholder="Buscar por DNI" style="padding:8px; width:180px; border-radius:6px; border:1px solid #ccc;">
+      <button class="btn" onclick="buscarPorDNI()">Buscar</button>
+    </div>
+
+    <div id="lecturas">
+      <b>Lecturas recientes:</b>
+      <ul id="lecturas-list" style="list-style:none; padding-left:0; margin:0;"></ul>
+    </div>
+  </div>
+  <script>
+    let html5QrcodeScanner;
+    let lecturas = [];
+
+    function getCampoAcreditacion() {
+      const value = document.getElementById('filtro-acred').value;
+      if (value === "A1") return "A1";
+      if (value === "AE") return "AE";
+      if (value.startsWith("AT-")) return "AT";
+      return "A1";
+    }
+
+    function getIdMateriaSeleccionada() {
+      const value = document.getElementById('filtro-acred').value;
+      if (value.startsWith("AT-")) return value.split('-')[1];
+      return null;
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById('result').innerHTML = `<b>Buscando inscripción...</b>`;
+      try {
+        const res = await fetch(`/IES_9-024/lector/buscar/${decodedText}`);
+        const data = await res.json();
+        let lectura = {
+          text: decodedText,
+          time: new Date().toLocaleTimeString(),
+          apellido: data.apellido || '',
+          nombre: data.nombre || '',
+          dni: data.dni || '',
+          materia: data.materia || '',
+          ok: data.ok,
+          msg: data.msg || ''
+        };
+        lecturas.unshift(lectura);
+        if (lecturas.length > 10) lecturas = lecturas.slice(0, 10);
+        renderLecturas();
+
+        if (data.ok) {
+          const campo = getCampoAcreditacion();
+          const idMateria = getIdMateriaSeleccionada();
+
+          const resp = await fetch('/IES_9-024/lector/actualizar-a1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idinscripcion: decodedText, // o data.idinscripcion si es por DNI
+              campo,
+              valor: "P",
+              idmateria: idMateria // esto es clave para la validación
+            })
+          });
+          const result = await resp.json();
+          if (!result.ok) {
+            document.getElementById('result').innerHTML = `<span style="color:red;">${result.msg}</span>`;
+            return;
+          }
+
+          if (data.youtube) {
+            document.getElementById('result').innerHTML = `
+              <b>Inscripción:</b> ${decodedText}<br>
+              <b>Apellido:</b> ${data.apellido}<br>
+              <b>Nombre:</b> ${data.nombre}<br>
+              <b>DNI:</b> ${data.dni}<br>
+              <b>Materia:</b> ${data.materia}<br>
+              <a href="${data.youtube}" target="_blank" style="color:blue;font-weight:bold;">Ir a clase de YouTube</a>
+            `;
+          } else {
+            document.getElementById('result').innerHTML = `
+              <b>Inscripción:</b> ${decodedText}<br>
+              <b>Apellido:</b> ${data.apellido}<br>
+              <b>Nombre:</b> ${data.nombre}<br>
+              <b>DNI:</b> ${data.dni}<br>
+              <b>Materia:</b> ${data.materia}
+            `;
+          }
+        } else {
+          document.getElementById('result').innerHTML = `<span style="color:red;">${data.msg}</span>`;
+        }
+      } catch (e) {
+        document.getElementById('result').innerHTML = `<span style="color:red;">Error de conexión</span>`;
+      }
+    }
+
+    function renderLecturas() {
+      const ul = document.getElementById('lecturas-list');
+      ul.innerHTML = '';
+      lecturas.forEach(l => {
+        const li = document.createElement('li');
+        li.className = 'lectura-item';
+        if (l.ok) {
+          li.innerHTML = `<span style="color:#0a6fa6;">[${l.time}]</span> 
+            <b>${l.apellido}, ${l.nombre}</b> | DNI: ${l.dni} | Materia: ${l.materia} 
+            <span style="color:#888;">(Inscripción: ${l.text})</span>`;
+        } else {
+          li.innerHTML = `<span style="color:#0a6fa6;">[${l.time}]</span> 
+            <span style="color:red;">${l.msg || 'No encontrado'}</span> 
+            <span style="color:#888;">(Inscripción: ${l.text})</span>`;
+        }
+        ul.appendChild(li);
+      });
+    }
+
+    function resetScanner() {
+      document.getElementById('result').innerHTML = "";
+      html5QrcodeScanner.clear().then(() => {
+        html5QrcodeScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        );
+      });
+    }
+
+    async function buscarPorDNI() {
+      const dni = document.getElementById('dni-input').value.trim();
+      if (!dni) {
+        document.getElementById('result').innerHTML = '<span style="color:red;">Ingrese un DNI</span>';
+        return;
+      }
+      document.getElementById('result').innerHTML = `<b>Buscando inscripción...</b>`;
+      try {
+        const res = await fetch(`/IES_9-024/lector/buscar-dni/${dni}`);
+        const data = await res.json();
+        let lectura = {
+          text: data.idinscripcion || '',
+          time: new Date().toLocaleTimeString(),
+          apellido: data.apellido || '',
+          nombre: data.nombre || '',
+          dni: dni,
+          materia: data.materia || '',
+          ok: data.ok,
+          msg: data.msg || ''
+        };
+        lecturas.unshift(lectura);
+        if (lecturas.length > 10) lecturas = lecturas.slice(0, 10);
+        renderLecturas();
+
+        if (data.ok) {
+          if (data.youtube) {
+            document.getElementById('result').innerHTML = `
+              <b>Inscripción:</b> ${data.idinscripcion}<br>
+              <b>Apellido:</b> ${data.apellido}<br>
+              <b>Nombre:</b> ${data.nombre}<br>
+              <b>DNI:</b> ${dni}<br>
+              <b>Materia:</b> ${data.materia}<br>
+              <a href="${data.youtube}" target="_blank" style="color:blue;font-weight:bold;">Ir a clase de YouTube</a>
+            `;
+          } else {
+            document.getElementById('result').innerHTML = `
+              <b>Inscripción:</b> ${data.idinscripcion}<br>
+              <b>Apellido:</b> ${data.apellido}<br>
+              <b>Nombre:</b> ${data.nombre}<br>
+              <b>DNI:</b> ${dni}<br>
+              <b>Materia:</b> ${data.materia}
+            `;
+          }
+        } else {
+          document.getElementById('result').innerHTML = `<span style="color:red;">${data.msg}</span>`;
+        }
+      } catch (e) {
+        document.getElementById('result').innerHTML = `<span style="color:red;">Error de conexión</span>`;
+      }
+    }
+
+    window.onload = function() {
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 320 },
+        onScanSuccess,
+        undefined,
+        true
+      );
+    }
+  </script>
+</body>
+</html>
