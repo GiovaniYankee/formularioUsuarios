@@ -1,27 +1,15 @@
 const conexion = require('../database/db');
 const QRCode = require('qrcode'); // npm install qrcode
  // Requiere nodemailer
-const nodemailer = require('nodemailer');
-const e = require('express');
-
-// Configura tu correo y contraseña de aplicación aquí
-const EMAIL_USER = 'tic.ies9024@gmail.com'; // Cambia por tu correo real
-const EMAIL_PASS = 'mcpl xotk ssoc mncj';
-
-// Definir transporter para Nodemailer
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS
-  }
-});
+  const nodemailer = require('nodemailer');
+  const e = require('express');
+  
+  // Configura tu correo y contraseña de aplicación aquí
+  const EMAIL_USER = 'tic.ies9024@gmail.com'; // Cambia por tu correo real
+  const EMAIL_PASS = 'mcpl xotk ssoc mncj'; 
 const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
 // --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
-  // Ejecutar actualización/creación de registros antes de mostrar la vista
-  await crearOActualizarRegistrosAsistencia();
-
   const materia = req.query.materia;
   const [materias] = await conexion.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
   let query = `
@@ -45,7 +33,7 @@ async function vistaAsistencia(req, res) {
 
 async function crearOActualizarRegistrosAsistencia() {
   const [inscripciones] = await conexion.promise().query(`
-    SELECT i.idinscripcion, i.persona_idpersona, p.apellido, p.nombre, p.correo, p.telefono, m.materia, m.idmateria AS idmateria
+    SELECT i.idinscripcion, i.persona_idpersona, p.apellido, p.nombre, p.correo, p.telefono, m.materia
     FROM inscripcion i
     LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
     LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
@@ -59,7 +47,6 @@ async function crearOActualizarRegistrosAsistencia() {
   const horaStr = fecha.toTimeString().slice(0, 5);
 
   for (const insc of inscripciones) {
-    console.log('insc.idmateria:', insc.idmateria, 'detalle:', insc.detalle);
     // 2. Verificar si ya existe registro para esta inscripción
     const [registros] = await conexion.promise().query(
       'SELECT * FROM registroasisten WHERE inscripcion_idinscripcion = ?',

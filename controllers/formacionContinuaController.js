@@ -4,8 +4,7 @@ exports.vistaFormacionContinua = async (req, res) => {
   try {
     // Trae inscripciones y persona
     const [inscripciones] = await conexion.promise().query(`
-      SELECT i.*, p.apellido, p.nombre, f.nombreFacultad AS facultad, ea.estadoAlumno,
-CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) AS idmateria
+      SELECT i.*, p.apellido, p.nombre, f.nombreFacultad AS facultad, ea.estadoAlumno
 FROM inscripcion i
 LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
 LEFT JOIN facultad f ON i.facultad_idfacultad = f.idfacultad
