@@ -66,18 +66,18 @@
                           '<%= p.tipoDocumento %>',
                           '<%= p.numDocumento %>',
                           '<%= p.cuil %>',
-                          '<%= p.fechaNacimiento ? p.fechaNacimiento.toISOString ? p.fechaNacimiento.toISOString().slice(0,10) : p.fechaNacimiento : '' %>',
+                          '<%= p.fechaNacimiento %>',
                           '<%= p.correo %>',
                           '<%= p.telefono %>',
                           '<%= p.direccion %>',
                           '<%= p.pais_idpais %>',
                           '<%= p.provincia_idprovincia %>',
                           '<%= p.localidad %>',
-                          '<%= p.fechaAlta ? p.fechaAlta.toISOString ? p.fechaAlta.toISOString().slice(0,10) : p.fechaAlta : '' %>',
+                          '<%= p.fechaAlta  %>',
                           '<%= p.genero %>',
                           '<%= p.tipoPersona_idtipoPersona %>',
                           '<%= p.situacion %>',
-                          '<%= p.habilitado ? '1' : '0' %>'
+                          '<%= p.habilitado ? 1 : 0 %>'
                         )">
                   Editar
                 </button>
