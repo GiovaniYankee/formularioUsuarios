@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Listado de Personas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-4">
+    <a href="/inscripciones" class="btn btn-success mb-3">Ir a inscripciones</a>
+    <h2>Listado de Personas</h2>
+    <table class="table table-bordered table-striped align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Apellido</th>
+          <th>Nombre</th>
+          <th>Tipo Doc</th>
+          <th>N° Doc</th>
+          <th>CUIL</th>
+          <th>Fecha Nac.</th>
+          <th>Correo</th>
+          <th>Teléfono</th>
+          <th>Dirección</th>
+          <th>País</th>
+          <th>Provincia</th>
+          <th>Localidad</th>
+          <th>Fecha Alta</th>
+          <th>Género</th>
+          <th>Tipo Persona</th>
+          <th>Situación</th>
+          <th>Habilitado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (personas && personas.length > 0) { %>
+          <% personas.forEach(function(p, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= p.apellido %></td>
+              <td><%= p.nombre %></td>
+              <td><%= p.tipoDocumento %></td>
+              <td><%= p.numDocumento %></td>
+              <td><%= p.cuil %></td>
+              <td><%= p.fechaNacimiento ? p.fechaNacimiento.toISOString ? p.fechaNacimiento.toISOString().slice(0,10) : p.fechaNacimiento : '' %></td>
+              <td><%= p.correo %></td>
+              <td><%= p.telefono %></td>
+              <td><%= p.direccion %></td>
+              <td><%= p.pais_idpais %></td>
+              <td><%= p.provincia_idprovincia %></td>
+              <td><%= p.localidad %></td>
+              <td><%= p.fechaAlta ? p.fechaAlta.toISOString ? p.fechaAlta.toISOString().slice(0,10) : p.fechaAlta : '' %></td>
+              <td><%= p.genero %></td>
+              <td><%= p.tipoPersona_idtipoPersona %></td>
+              <td><%= p.situacion %></td>
+              <td><%= p.habilitado ? 'Sí' : 'No' %></td>
+              <td>
+                <button class="btn btn-warning btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalEditar"
+                        onclick="abrirModalEditar(
+                          '<%= p.idpersona %>',
+                          '<%= p.apellido %>',
+                          '<%= p.nombre %>',
+                          '<%= p.tipoDocumento %>',
+                          '<%= p.numDocumento %>',
+                          '<%= p.cuil %>',
+                          '<%= p.fechaNacimiento ? p.fechaNacimiento.toISOString ? p.fechaNacimiento.toISOString().slice(0,10) : p.fechaNacimiento : '' %>',
+                          '<%= p.correo %>',
+                          '<%= p.telefono %>',
+                          '<%= p.direccion %>',
+                          '<%= p.pais_idpais %>',
+                          '<%= p.provincia_idprovincia %>',
+                          '<%= p.localidad %>',
+                          '<%= p.fechaAlta ? p.fechaAlta.toISOString ? p.fechaAlta.toISOString().slice(0,10) : p.fechaAlta : '' %>',
+                          '<%= p.genero %>',
+                          '<%= p.tipoPersona_idtipoPersona %>',
+                          '<%= p.situacion %>',
+                          '<%= p.habilitado ? '1' : '0' %>'
+                        )">
+                  Editar
+                </button>
+              </td>
+            </tr>
+          <% }); %>
+        <% } else { %>
+          <tr><td colspan="19">No hay personas registradas.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal para editar persona -->
+  <div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formEditarPersona" method="post" action="/personas/editar">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditarLabel">Editar Persona</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="idpersona" id="edit-idpersona">
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <label>Apellido</label>
+                <input type="text" class="form-control" name="apellido" id="edit-apellido" required>
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Nombre</label>
+                <input type="text" class="form-control" name="nombre" id="edit-nombre" required>
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Tipo Documento</label>
+                <input type="text" class="form-control" name="tipoDocumento" id="edit-tipoDocumento">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>N° Documento</label>
+                <input type="text" class="form-control" name="numDocumento" id="edit-numDocumento">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>CUIL</label>
+                <input type="text" class="form-control" name="cuil" id="edit-cuil">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Fecha Nacimiento</label>
+                <input type="date" class="form-control" name="fechaNacimiento" id="edit-fechaNacimiento">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Correo</label>
+                <input type="email" class="form-control" name="correo" id="edit-correo">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Teléfono</label>
+                <input type="text" class="form-control" name="telefono" id="edit-telefono">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Dirección</label>
+                <input type="text" class="form-control" name="direccion" id="edit-direccion">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>País</label>
+                <input type="text" class="form-control" name="pais_idpais" id="edit-pais_idpais">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Provincia</label>
+                <input type="text" class="form-control" name="provincia_idprovincia" id="edit-provincia_idprovincia">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Localidad</label>
+                <input type="text" class="form-control" name="localidad" id="edit-localidad">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Fecha Alta</label>
+                <input type="date" class="form-control" name="fechaAlta" id="edit-fechaAlta">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Género</label>
+                <input type="text" class="form-control" name="genero" id="edit-genero">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Tipo Persona</label>
+                <input type="text" class="form-control" name="tipoPersona_idtipoPersona" id="edit-tipoPersona_idtipoPersona">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Situación</label>
+                <input type="text" class="form-control" name="situacion" id="edit-situacion">
+              </div>
+              <div class="col-md-6 mb-2">
+                <label>Habilitado</label>
+                <select class="form-control" name="habilitado" id="edit-habilitado">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function abrirModalEditar(idpersona, apellido, nombre, tipoDocumento, numDocumento, cuil, fechaNacimiento, correo, telefono, direccion, pais_idpais, provincia_idprovincia, localidad, fechaAlta, genero, tipoPersona_idtipoPersona, situacion, habilitado) {
+      document.getElementById('edit-idpersona').value = idpersona;
+      document.getElementById('edit-apellido').value = apellido;
+      document.getElementById('edit-nombre').value = nombre;
+      document.getElementById('edit-tipoDocumento').value = tipoDocumento;
+      document.getElementById('edit-numDocumento').value = numDocumento;
+      document.getElementById('edit-cuil').value = cuil;
+      document.getElementById('edit-fechaNacimiento').value = fechaNacimiento;
+      document.getElementById('edit-correo').value = correo;
+      document.getElementById('edit-telefono').value = telefono;
+      document.getElementById('edit-direccion').value = direccion;
+      document.getElementById('edit-pais_idpais').value = pais_idpais;
+      document.getElementById('edit-provincia_idprovincia').value = provincia_idprovincia;
+      document.getElementById('edit-localidad').value = localidad;
+      document.getElementById('edit-fechaAlta').value = fechaAlta;
+      document.getElementById('edit-genero').value = genero;
+      document.getElementById('edit-tipoPersona_idtipoPersona').value = tipoPersona_idtipoPersona;
+      document.getElementById('edit-situacion').value = situacion;
+      document.getElementById('edit-habilitado').value = habilitado;
+    }
+  </script>
+</body>
+</html>

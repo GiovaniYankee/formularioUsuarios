@@ -19,6 +19,10 @@ const materiaController = require('./controllers/materiasController');
 
 const asistenciaController = require('./controllers/asistenciaController');
 
+const lectorController = require('./controllers/lectorController');
+
+const usuariosController = require('./controllers/usuariosController');
+
 router.get('/', (req, res) => {
   res.render('mantenimiento');
 });
@@ -57,6 +61,16 @@ router.get('/IES_9-024/materias-por-provincia/:idpersona/:idfacultad', inscripci
 router.post('/IES_9-024/inscripcion/finalizar', inscripcionController.finalizarInscripcion);
 
 //Rutas Asistencia
-router.get('/IES_9-024/asistencia', asistenciaController.vistaIndex);
+router.get('/IES_9-024/asistencia', asistenciaController.vistaAsistencia);
+router.post('/IES_9-024/asistencia/crear-o-actualizar', asistenciaController.crearOActualizarRegistrosAsistencia);
+router.get('/IES_9-024/asistencia/lector', lectorController.vistaLector);
+router.get('/IES_9-024/lector/buscar/:idinscripcion', lectorController.buscarPorInscripcion);
+router.get('/IES_9-024/lector/buscar-dni/:dni', lectorController.buscarPorDNI);
+router.post('/IES_9-024/lector/actualizar-a1', lectorController.actualizarA1);
+
+//Rutas Personas
+router.get('/IES_9-024/usuarios', usuariosController.vistaUsuarios);
+router.post('/personas/editar', usuariosController.editarPersona);
+
 
 module.exports = router;
