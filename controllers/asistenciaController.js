@@ -13,7 +13,7 @@ async function vistaAsistencia(req, res) {
   const materia = req.query.materia;
   const [materias] = await conexion.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
   let query = `
-    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono, m.materia, 
+    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono, p.numDocumento, m.materia, 
            CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) AS idmateria
     FROM registroasisten r
     LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
@@ -29,6 +29,7 @@ async function vistaAsistencia(req, res) {
   query += ' ORDER BY p.apellido ASC, p.nombre ASC';
   const [asistencias] = await conexion.promise().query(query, params);
   res.render('asistencia', { asistencias, materias, materiaSeleccionada: materia || 'todas' });
+  crearOActualizarRegistrosAsistencia();
 }
 
 async function crearOActualizarRegistrosAsistencia() {
@@ -169,6 +170,14 @@ async function enviarCorreoAsistencia(insc, curricula) {
 
   await transporter.sendMail(mailOptions);
 }
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
+  }
+});
 
 module.exports = {
   vistaAsistencia,

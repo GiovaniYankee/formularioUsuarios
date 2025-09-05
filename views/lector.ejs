@@ -235,6 +235,23 @@
         renderLecturas();
 
         if (data.ok) {
+          const campo = getCampoAcreditacion();
+          const idMateria = getIdMateriaSeleccionada();
+          const resp = await fetch('/IES_9-024/lector/actualizar-a1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idinscripcion: data.idinscripcion, // usar idinscripcion de la respuesta
+              campo,
+              valor: "P",
+              idmateria: idMateria
+            })
+          });
+          const result = await resp.json();
+          if (!result.ok) {
+            document.getElementById('result').innerHTML = `<span style="color:red;">${result.msg}</span>`;
+            return;
+          }
           if (data.youtube) {
             document.getElementById('result').innerHTML = `
               <b>Inscripción:</b> ${data.idinscripcion}<br>
