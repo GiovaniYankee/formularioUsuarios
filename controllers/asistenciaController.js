@@ -180,6 +180,29 @@ async function enviarCorreoAsistencia(insc, curricula) {
   await transporter.sendMail(mailOptions);
 }
 
+async function enviarCorreosPendientes() {
+  const [registros] = await conexion.promise().query(`
+    SELECT r.*, i.*, p.*, m.*
+    FROM registroasisten r
+    LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
+    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
+    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
+  `);
+
+  for (const reg of registros) {
+    let curr;
+    try { curr = typeof reg.curricula === 'string' ? JSON.parse(reg.curricula) : reg.curricula; } catch { continue; }
+    if (curr.noti1 === "pendiente" || curr.noti1==="") {
+      await enviarCorreoAsistencia(reg, curr);
+      curr.noti1 = "ok";
+      await conexion.promise().query(
+        `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
+        [JSON.stringify(curr), reg.inscripcion_idinscripcion]
+      );
+    }
+  }
+}
+
 module.exports = {
   vistaAsistencia,
   crearOActualizarRegistrosAsistencia,
