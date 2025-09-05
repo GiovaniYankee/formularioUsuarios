@@ -2,11 +2,19 @@ const conexion = require('../database/db');
 const QRCode = require('qrcode'); // npm install qrcode
  // Requiere nodemailer
   const nodemailer = require('nodemailer');
-  const e = require('express');
   
   // Configura tu correo y contraseña de aplicación aquí
-  const EMAIL_USER = 'tic.ies9024@gmail.com'; // Cambia por tu correo real
-  const EMAIL_PASS = 'mcpl xotk ssoc mncj'; 
+  const EMAIL_USER = 'tic.ies9024@gmail.com';
+const EMAIL_PASS = 'mcpl xotk ssoc mncj';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
+  }
+});
+
 const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
 // --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
@@ -97,9 +105,9 @@ Para registrar su asistencia, por favor presente el siguiente código QR al mome
           JSON.stringify(curricula)
         ]
       );
-      // Enviar correo porque es nuevo
-      await enviarCorreoAsistencia(insc, curricula);
-      curricula.noti1 = "ok";
+      // NO enviar correo aquí
+      // await enviarCorreoAsistencia(insc, curricula);
+      curricula.noti1 = "pendiente"; // Marcar como pendiente
       await conexion.promise().query(
         `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
         [JSON.stringify(curricula), insc.idinscripcion]
@@ -146,7 +154,7 @@ async function enviarCorreoAsistencia(insc, curricula) {
     `;
   } else {
     // Para otras materias, envía el QR como imagen adjunta
-    contenidoQR = `<img src="cid:qrimage" alt="Código QR" style="width:150px;height:150px;">`;
+    contenidoQR = `<img src="cid:qrimage" alt="Código QR" style="width:250px;height:250px;">`;
     mailOptions.html = `
       <p>14° Congreso de Educación Integral – 2025<br>
       <b>¡Su inscripción al 14° Congreso de Educación Integral ha sido validada con éxito!</b></p>
@@ -170,7 +178,31 @@ async function enviarCorreoAsistencia(insc, curricula) {
   await transporter.sendMail(mailOptions);
 }
 
+async function enviarCorreosPendientes() {
+  const [registros] = await conexion.promise().query(`
+    SELECT r.*, i.*, p.*, m.*
+    FROM registroasisten r
+    LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
+    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
+    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
+  `);
+
+  for (const reg of registros) {
+    let curr;
+    try { curr = typeof reg.curricula === 'string' ? JSON.parse(reg.curricula) : reg.curricula; } catch { continue; }
+    if (curr.noti1 === "pendiente" || curr.noti1==="") {
+      await enviarCorreoAsistencia(reg, curr);
+      curr.noti1 = "ok";
+      await conexion.promise().query(
+        `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
+        [JSON.stringify(curr), reg.inscripcion_idinscripcion]
+      );
+    }
+  }
+}
+
 module.exports = {
   vistaAsistencia,
-  crearOActualizarRegistrosAsistencia
+  crearOActualizarRegistrosAsistencia,
+  enviarCorreosPendientes
 };
