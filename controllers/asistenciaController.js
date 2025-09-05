@@ -21,7 +21,7 @@ async function vistaAsistencia(req, res) {
   const materia = req.query.materia;
   const [materias] = await conexion.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
   let query = `
-    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono, m.materia, 
+    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono , p.numDocumento, m.materia, 
            CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) AS idmateria
     FROM registroasisten r
     LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
@@ -37,6 +37,8 @@ async function vistaAsistencia(req, res) {
   query += ' ORDER BY p.apellido ASC, p.nombre ASC';
   const [asistencias] = await conexion.promise().query(query, params);
   res.render('asistencia', { asistencias, materias, materiaSeleccionada: materia || 'todas' });
+crearOActualizarRegistrosAsistencia();
+
 }
 
 async function crearOActualizarRegistrosAsistencia() {
@@ -139,7 +141,7 @@ async function enviarCorreoAsistencia(insc, curricula) {
 
   // Si la materia es id 2, solo envía el enlace de YouTube
   if (insc.idmateria == 2) {
-    contenidoQR = `<a href="https://www.youtube.com/watch?v=XXXXXXXXXXX" target="_blank" style="color:blue;font-weight:bold;">
+    contenidoQR = `<a href="https://youtube.com/live/k6Sdjhiw29Y?feature=share" target="_blank" style="color:blue;font-weight:bold;">
       Ir a clase de YouTube
     </a>`;
     mailOptions.html = `
@@ -176,29 +178,6 @@ async function enviarCorreoAsistencia(insc, curricula) {
   }
 
   await transporter.sendMail(mailOptions);
-}
-
-async function enviarCorreosPendientes() {
-  const [registros] = await conexion.promise().query(`
-    SELECT r.*, i.*, p.*, m.*
-    FROM registroasisten r
-    LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
-    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
-    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
-  `);
-
-  for (const reg of registros) {
-    let curr;
-    try { curr = typeof reg.curricula === 'string' ? JSON.parse(reg.curricula) : reg.curricula; } catch { continue; }
-    if (curr.noti1 === "pendiente" || curr.noti1==="") {
-      await enviarCorreoAsistencia(reg, curr);
-      curr.noti1 = "ok";
-      await conexion.promise().query(
-        `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
-        [JSON.stringify(curr), reg.inscripcion_idinscripcion]
-      );
-    }
-  }
 }
 
 module.exports = {
