@@ -67,6 +67,10 @@ router.get('/IES_9-024/asistencia/lector', lectorController.vistaLector);
 router.get('/IES_9-024/lector/buscar/:idinscripcion', lectorController.buscarPorInscripcion);
 router.get('/IES_9-024/lector/buscar-dni/:dni', lectorController.buscarPorDNI);
 router.post('/IES_9-024/lector/actualizar-a1', lectorController.actualizarA1);
+router.post('/notificar-asistencia', async (req, res) => {
+  await asistenciaController.enviarCorreosPendientes();
+  res.redirect('/IES_9-024/asistencia');
+});
 
 //Rutas Personas
 router.get('/IES_9-024/usuarios', usuariosController.vistaUsuarios);
