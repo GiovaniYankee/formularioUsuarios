@@ -130,6 +130,11 @@ Para registrar su asistencia, por favor presente el siguiente código QR al mome
   }
 }
 
+function esCorreoValido(correo) {
+  // Validación simple, puedes mejorarla si lo necesitas
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) && !correo.includes('..');
+}
+
 async function enviarCorreoAsistencia(insc, curricula) {
   const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
   let contenidoQR = '';
@@ -175,6 +180,11 @@ async function enviarCorreoAsistencia(insc, curricula) {
         cid: 'qrimage'
       }];
     }
+  }
+
+  if (!esCorreoValido(insc.correo)) {
+    console.log('Correo inválido, no se envía:', insc.correo);
+    return;
   }
 
   await transporter.sendMail(mailOptions);
