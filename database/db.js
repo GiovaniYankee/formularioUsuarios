@@ -3,11 +3,11 @@ const mysql = require('mysql2'); // Asegúrate de usar mysql2
 const conexion = mysql.createConnection({
   host: 'localhost',
   database: 'sistema_educativo',
-    //user: 'root',
-  //password: 'giovani95',
+    user: 'root',
+  password: 'giovani95',
 
-  user: 'nodeuser',
-  password: 'miPassword123',
+  //user: 'nodeuser',
+  //password: 'miPassword123',
 
 });
 
