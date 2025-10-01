@@ -1,14 +1,9 @@
-
-const conexion = require("../database/db");
+const model = require('../models/materiaModel');
 
 exports.vistaMaterias = async (req, res) => {
   try {
-    const [materias] = await conexion.promise().query(`
-        SELECT m.*, a.nombreAula AS nombreAula, a.capacidad
-        FROM materia m
-        LEFT JOIN aula a ON m.aula_idaula = a.idaula
-        `);
-    const [aulas] = await conexion.promise().query('SELECT idaula, nombreAula, capacidad FROM aula');
+    const materias = await model.obtenerMaterias();
+    const aulas = await model.obtenerAulas();
     res.render('materias', { materias, aulas });
   } catch (error) {
     console.error("Error al obtener las materias:", error);
@@ -19,10 +14,7 @@ exports.vistaMaterias = async (req, res) => {
 exports.actualizarMateria = async (req, res) => {
   const { idmateria, materia, habilitado, aula_idaula } = req.body;
   try {
-    await conexion.promise().query(
-      'UPDATE materia SET materia = ?, habilitado = ?, aula_idaula = ? WHERE idmateria = ?',
-      [materia, habilitado, aula_idaula, idmateria]
-    );
+    await model.actualizarMateria(idmateria, materia, habilitado, aula_idaula);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

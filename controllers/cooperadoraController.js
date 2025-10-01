@@ -1,102 +1,57 @@
-const conexion = require('../database/db');
+const modelo = require('../models/cooperadoraModel');
 
-
-exports.vistaCooperadora = async (req, res) => {
-  //const [recibos] = await conexion.promise().query('SELECT * FROM recibo');
-
-  const [recibos] = await conexion.promise().query(`
-    SELECT r.*, 
-         f.persona_idpersona, 
-         p.idpersona, 
-         p.nombre, 
-         p.apellido, 
-         p.numDocumento,
-         p.correo,
-         p.telefono
-  FROM recibo r
-  LEFT JOIN formapago f ON r.formapago_idformapago = f.idformapago
-  LEFT JOIN persona p ON f.persona_idpersona = p.idpersona
-  ORDER BY p.apellido ASC, p.nombre ASC
-`);
-  res.render('cooperadora', { recibos });
-
-  
+const vistaCooperadora = async (req, res) => {
+  try {
+    const [recibos] = await modelo.obtenerRecibos();
+    res.render('cooperadora', { recibos });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 };
 
-exports.actualizarEstadoRecibo = async (req, res) => {
+const actualizarEstadoRecibo = async (req, res) => {
   const { idrecibo, estado } = req.body;
   let habilitado = 1;
   if (estado === 'rechazado' || estado === 'rechazado_duplicado') {
     habilitado = 0;
   }
   try {
-    await conexion.promise().query(
-      'UPDATE recibo SET detalle = ?, habilitado = ? WHERE idrecibo = ?',
-      [estado, habilitado, idrecibo]
-    );
+    await modelo.actualizarRecibo(idrecibo, estado, habilitado);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 };
 
-exports.verificarTodos = async (req, res) => {
+const verificarTodos = async (req, res) => {
   try {
-    // Trae todos los recibos con su idformapago y detalle
-    const [recibos] = await conexion.promise().query(`
-      SELECT r.idrecibo, r.formapago_idformapago, r.detalle
-      FROM recibo r
-    `);
+    const [recibos] = await modelo.obtenerTodosRecibos();
 
     for (const recibo of recibos) {
-      // Si está rechazado o rechazado_duplicado, deshabilita el formapago
       if (recibo.detalle === 'rechazado' || recibo.detalle === 'rechazado_duplicado') {
-        await conexion.promise().query(
-          'UPDATE formapago SET habilitado = 0 WHERE idformapago = ?',
-          [recibo.formapago_idformapago]
-        );
-        // Busca el formapago correspondiente
-        const [formapagos] = await conexion.promise().query(
-          'SELECT detalle FROM formapago WHERE idformapago = ?',
-          [recibo.formapago_idformapago]
-        );
+        await modelo.actualizarFormapago(recibo.formapago_idformapago, 0);
+
+        const [formapagos] = await modelo.obtenerFormapagoPorId(recibo.formapago_idformapago);
         if (formapagos.length > 0) {
-          const idinscripcion = formapagos[0].detalle; // Aquí detalle es el idinscripcion
+          const idinscripcion = formapagos[0].detalle;
           if (idinscripcion) {
-            await conexion.promise().query(
-              `UPDATE inscripcion SET estadoalumno_idestadoAlumno = (
-                  SELECT idestadoAlumno FROM estadoalumno WHERE estadoAlumno = 'Aspirante' LIMIT 1
-                ) WHERE idinscripcion = ?`,
-              [idinscripcion]
-            );
+            await modelo.actualizarInscripcion(idinscripcion, 'Aspirante');
           }
         }
       }
-      // Si está aprobado, busca idinscripcion en formapago.detalle y actualiza inscripcion
       else if (recibo.detalle === 'aprobado') {
-        // Habilita el formapago correspondiente
-        await conexion.promise().query(
-          'UPDATE formapago SET habilitado = 1 WHERE idformapago = ?',
-          [recibo.formapago_idformapago]
-        );
-        // Busca el formapago correspondiente
-        const [formapagos] = await conexion.promise().query(
-          'SELECT detalle FROM formapago WHERE idformapago = ?',
-          [recibo.formapago_idformapago]
-        );
+        await modelo.actualizarFormapago(recibo.formapago_idformapago, 1);
+
+        const [formapagos] = await modelo.obtenerFormapagoPorId(recibo.formapago_idformapago);
         if (formapagos.length > 0) {
-          const idinscripcion = formapagos[0].detalle; // Aquí detalle es el idinscripcion
+          const idinscripcion = formapagos[0].detalle;
           if (idinscripcion) {
-            await conexion.promise().query(
-              `UPDATE inscripcion SET estadoalumno_idestadoAlumno = (
-                  SELECT idestadoAlumno FROM estadoalumno WHERE estadoAlumno = 'Regular' LIMIT 1
-                ) WHERE idinscripcion = ?`,
-              [idinscripcion]
-            );
+            await modelo.actualizarInscripcion(idinscripcion, 'Regular');
           }
         }
       }
     }
+
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -104,3 +59,8 @@ exports.verificarTodos = async (req, res) => {
   }
 };
 
+module.exports = {
+  vistaCooperadora,
+  actualizarEstadoRecibo,
+  verificarTodos
+};

@@ -1,10 +1,7 @@
-const conexion = require('../database/db');
-const QRCode = require('qrcode'); // npm install qrcode
- // Requiere nodemailer
-  const nodemailer = require('nodemailer');
-  
-  // Configura tu correo y contraseña de aplicación aquí
-  const EMAIL_USER = 'tic.ies9024@gmail.com';
+const asistenciaModel = require('../models/asistenciaModel');
+const nodemailer = require('nodemailer');
+
+const EMAIL_USER = 'tic.ies9024@gmail.com';
 const EMAIL_PASS = 'mcpl xotk ssoc mncj';
 
 const transporter = nodemailer.createTransport({
@@ -15,61 +12,27 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
-// --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
   const materia = req.query.materia;
-  const [materias] = await conexion.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
-  let query = `
-    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono , p.numDocumento, m.materia, 
-           CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) AS idmateria
-    FROM registroasisten r
-    LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
-    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
-    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
-  `;
-  let params = [];
-  if (materia && materia !== 'todas') {
-    query += ' WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, \'$.idmateria\')) AS UNSIGNED) = ?';
-    params.push(materia);
-  }
-  // Ordena por apellido y nombre
-  query += ' ORDER BY p.apellido ASC, p.nombre ASC';
-  const [asistencias] = await conexion.promise().query(query, params);
+  const materias = await asistenciaModel.obtenerMaterias();
+  const asistencias = await asistenciaModel.obtenerAsistencias(materia);
   res.render('asistencia', { asistencias, materias, materiaSeleccionada: materia || 'todas' });
-crearOActualizarRegistrosAsistencia();
-
+  crearOActualizarRegistrosAsistencia();
 }
 
 async function crearOActualizarRegistrosAsistencia() {
-  const [inscripciones] = await conexion.promise().query(`
-    SELECT i.idinscripcion, i.persona_idpersona, p.apellido, p.nombre, p.correo, p.telefono, m.materia
-    FROM inscripcion i
-    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
-    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
-    WHERE i.habilitado = 1
-      AND i.estadoalumno_idestadoAlumno = (SELECT idestadoAlumno FROM estadoalumno WHERE estadoAlumno = 'Regular' LIMIT 1)
-  `);
-  console.log("Inscripciones encontradas:", inscripciones.length);
-
+  const inscripciones = await asistenciaModel.obtenerInscripciones();
   const fecha = new Date();
   const fechaStr = fecha.toISOString().slice(0, 10);
   const horaStr = fecha.toTimeString().slice(0, 5);
 
   for (const insc of inscripciones) {
-    // 2. Verificar si ya existe registro para esta inscripción
-    const [registros] = await conexion.promise().query(
-      'SELECT * FROM registroasisten WHERE inscripcion_idinscripcion = ?',
-      [insc.idinscripcion]
-    );
+    const registros = await asistenciaModel.obtenerRegistrosPorInscripcion(insc.idinscripcion);
+    const qr = await asistenciaModel.generarQR(insc.idinscripcion);
 
-    // 3. Generar QR con el idinscripcion
-    const qr = await QRCode.toDataURL(String(insc.idinscripcion));
-
-    // 4. Construir el JSON curricula
     const curricula = {
       P: "pagado",
-      A1: " ", // se actualizará según la regla de horario
+      A1: " ",
       AT: " ",
       AE: " ",
       noti1: "",
@@ -93,45 +56,23 @@ Para registrar su asistencia, por favor presente el siguiente código QR al mome
       Certificacion: ""
     };
 
-    // 5. Si no existe, crear el registro
     if (registros.length === 0) {
-      await conexion.promise().query(
-        `INSERT INTO registroasisten 
-          (fechaRegistro, horaRegistro, asistencia, inscripcion_idinscripcion, curricula)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          fechaStr,
-          horaStr,
-          "A", // A=proceso, T=terminado
-          insc.idinscripcion,
-          JSON.stringify(curricula)
-        ]
-      );
-      // NO enviar correo aquí
-      // await enviarCorreoAsistencia(insc, curricula);
-      curricula.noti1 = "pendiente"; // Marcar como pendiente
-      await conexion.promise().query(
-        `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
-        [JSON.stringify(curricula), insc.idinscripcion]
-      );
+      await asistenciaModel.insertarRegistro(fechaStr, horaStr, insc.idinscripcion, curricula);
+      curricula.noti1 = "pendiente";
+      await asistenciaModel.actualizarCurricula(curricula, insc.idinscripcion);
     } else {
-      // 6. Si existe, revisa si noti1 o notiF no están "ok" y actualiza si es necesario
       let curr = registros[0].curricula;
       try { curr = typeof curr === 'string' ? JSON.parse(curr) : curr; } catch { curr = curricula; }
       if (!curr.noti1 || curr.noti1 !== "ok") {
         await enviarCorreoAsistencia(insc, curr);
         curr.noti1 = "ok";
-        await conexion.promise().query(
-          `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
-          [JSON.stringify(curr), insc.idinscripcion]
-        );
+        await asistenciaModel.actualizarCurricula(curr, insc.idinscripcion);
       }
     }
   }
 }
 
 function esCorreoValido(correo) {
-  // Validación simple, puedes mejorarla si lo necesitas
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) && !correo.includes('..');
 }
 
@@ -144,7 +85,6 @@ async function enviarCorreoAsistencia(insc, curricula) {
     subject: asunto
   };
 
-  // Si la materia es id 2, solo envía el enlace de YouTube
   if (insc.idmateria == 2) {
     contenidoQR = `<a href="https://youtube.com/live/k6Sdjhiw29Y?feature=share" target="_blank" style="color:blue;font-weight:bold;">
       Ir a clase de YouTube
@@ -160,7 +100,6 @@ async function enviarCorreoAsistencia(insc, curricula) {
       <p>📅 Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes.</p>
     `;
   } else {
-    // Para otras materias, envía el QR como imagen adjunta
     contenidoQR = `<img src="cid:qrimage" alt="Código QR" style="width:250px;height:250px;">`;
     mailOptions.html = `
       <p>14° Congreso de Educación Integral – 2025<br>
@@ -183,7 +122,6 @@ async function enviarCorreoAsistencia(insc, curricula) {
   }
 
   if (!esCorreoValido(insc.correo)) {
-    console.log('Correo inválido, no se envía:', insc.correo);
     return;
   }
 
@@ -191,24 +129,14 @@ async function enviarCorreoAsistencia(insc, curricula) {
 }
 
 async function enviarCorreosPendientes() {
-  const [registros] = await conexion.promise().query(`
-    SELECT r.*, i.*, p.*, m.*
-    FROM registroasisten r
-    LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
-    LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
-    LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
-  `);
-
+  const registros = await asistenciaModel.obtenerTodosLosRegistros();
   for (const reg of registros) {
     let curr;
     try { curr = typeof reg.curricula === 'string' ? JSON.parse(reg.curricula) : reg.curricula; } catch { continue; }
-    if (curr.noti1 === "pendiente" || curr.noti1==="") {
+    if (curr.noti1 === "pendiente" || curr.noti1 === "") {
       await enviarCorreoAsistencia(reg, curr);
       curr.noti1 = "ok";
-      await conexion.promise().query(
-        `UPDATE registroasisten SET curricula=? WHERE inscripcion_idinscripcion=?`,
-        [JSON.stringify(curr), reg.inscripcion_idinscripcion]
-      );
+      await asistenciaModel.actualizarCurricula(curr, reg.inscripcion_idinscripcion);
     }
   }
 }

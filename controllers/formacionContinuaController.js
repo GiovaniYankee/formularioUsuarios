@@ -1,18 +1,10 @@
-const conexion = require('../database/db');
+const model = require('../models/formacionContinuaModel');
 
 exports.vistaFormacionContinua = async (req, res) => {
   try {
-    // Trae inscripciones y persona
-    const [inscripciones] = await conexion.promise().query(`
-      SELECT i.*, p.apellido, p.nombre, f.nombreFacultad AS facultad, ea.estadoAlumno
-FROM inscripcion i
-LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
-LEFT JOIN facultad f ON i.facultad_idfacultad = f.idfacultad
-LEFT JOIN estadoalumno ea ON i.estadoalumno_idestadoAlumno = ea.idestadoAlumno
-ORDER BY p.apellido ASC, p.nombre ASC
-    `);
-     
-    // Obtén todos los ids de materia únicos
+    const inscripciones = await model.obtenerInscripciones();
+
+    // Obtener ids de materia únicos
     const idsMateria = [];
     inscripciones.forEach(insc => {
       try {
@@ -23,43 +15,37 @@ ORDER BY p.apellido ASC, p.nombre ASC
       } catch (e) {}
     });
 
-    // Trae los nombres de las materias
-    let materiasMap = {};
-    if (idsMateria.length > 0) {
-      const [materias] = await conexion.promise().query(
-        `SELECT idmateria, materia FROM materia WHERE idmateria IN (${idsMateria.join(',')})`
-      );
-      materias.forEach(m => {
-        materiasMap[String(m.idmateria)] = m.materia;
-      });
-    }
+    // Traer nombres de las materias
+    const materiasList = await model.obtenerMateriasPorIds(idsMateria);
+    const materiasMap = {};
+    materiasList.forEach(m => materiasMap[String(m.idmateria)] = m.materia);
 
-    // Agrega el nombre de la materia a cada inscripción
+    // Agregar nombre de materia a cada inscripción
     inscripciones.forEach(insc => {
       try {
         const detalle = insc.detalle;
         insc.materia = detalle.idmateria ? materiasMap[String(detalle.idmateria)] || '' : '';
-
       } catch (e) {
         insc.materia = '';
       }
     });
-    // Trae todas las facultades
-    const [facultades] = await conexion.promise().query(`SELECT idfacultad, nombreFacultad FROM facultad`);
 
-    // Trae todas las materias con su idfacultad
-    const [materias] = await conexion.promise().query(`SELECT idmateria, materia, facultad_idfacultad FROM materia`);
-     // Solo inscripciones habilitadas por defecto
-    let inscripcionesHabilitadas = inscripciones.filter(insc => insc.habilitado == 1);
-    // contar inscripciones
-    let cantidadPorMateria = {};
+    const facultades = await model.obtenerFacultades();
+    const materias = await model.obtenerTodasMaterias();
+
+    const inscripcionesHabilitadas = inscripciones.filter(insc => insc.habilitado == 1);
+
+    const cantidadPorMateria = {};
     inscripcionesHabilitadas.forEach(insc => {
       if (insc.materia) {
         cantidadPorMateria[insc.materia] = (cantidadPorMateria[insc.materia] || 0) + 1;
       }
     });
+
     res.render('formacionContinua', { inscripciones, inscripcionesHabilitadas, facultades, materias, cantidadPorMateria });
+
   } catch (err) {
+    console.error(err);
     res.status(500).send('Error al obtener inscripciones');
   }
 };
@@ -67,10 +53,7 @@ ORDER BY p.apellido ASC, p.nombre ASC
 exports.deshabilitarInscripcion = async (req, res) => {
   const { idinscripcion } = req.body;
   try {
-    await conexion.promise().query(
-      'UPDATE inscripcion SET habilitado = 0 WHERE idinscripcion = ?',
-      [idinscripcion]
-    );
+    await model.actualizarInscripcionHabilitado(idinscripcion, 0);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -80,10 +63,7 @@ exports.deshabilitarInscripcion = async (req, res) => {
 exports.habilitarInscripcion = async (req, res) => {
   const { idinscripcion } = req.body;
   try {
-    await conexion.promise().query(
-      'UPDATE inscripcion SET habilitado = 1 WHERE idinscripcion = ?',
-      [idinscripcion]
-    );
+    await model.actualizarInscripcionHabilitado(idinscripcion, 1);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

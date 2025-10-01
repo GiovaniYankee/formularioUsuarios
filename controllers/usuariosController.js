@@ -1,25 +1,21 @@
-const db = require('../database/db');
-
-
+const usuariosModel = require('../models/usuariosModel');
 
 exports.vistaUsuarios = async (req, res) => {
-  const [personas] = await db.promise().query(`
-    SELECT idpersona, apellido, nombre, tipoDocumento, numDocumento, cuil, fechaNacimiento, correo, telefono, direccion, pais_idpais, provincia_idprovincia, localidad, fechaAlta, genero, tipoPersona_idtipoPersona, situacion, habilitado
-    FROM persona
-    ORDER BY apellido ASC, nombre ASC
-  `);
-  res.render('usuarios', { personas });
+  try {
+    const [personas] = await usuariosModel.obtenerPersonas();
+    res.render('usuarios', { personas });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al obtener usuarios');
+  }
 };
 
 exports.editarPersona = async (req, res) => {
-  const {
-    idpersona, apellido, nombre, tipoDocumento, numDocumento, cuil, fechaNacimiento,
-    correo, telefono, direccion, pais_idpais, provincia_idprovincia, localidad,
-    fechaAlta, genero, tipoPersona_idtipoPersona, situacion, habilitado
-  } = req.body;
-  await db.promise().query(`
-    UPDATE persona SET apellido=?, nombre=?, tipoDocumento=?, numDocumento=?, cuil=?, fechaNacimiento=?, correo=?, telefono=?, direccion=?, pais_idpais=?, provincia_idprovincia=?, localidad=?, fechaAlta=?, genero=?, tipoPersona_idtipoPersona=?, situacion=?, habilitado=?
-    WHERE idpersona=?
-  `, [apellido, nombre, tipoDocumento, numDocumento, cuil, fechaNacimiento, correo, telefono, direccion, pais_idpais, provincia_idprovincia, localidad, fechaAlta, genero, tipoPersona_idtipoPersona, situacion, habilitado, idpersona]);
-  res.redirect('/personas');
+  try {
+    await usuariosModel.actualizarPersona(req.body);
+    res.redirect('/personas');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al actualizar usuario');
+  }
 };
