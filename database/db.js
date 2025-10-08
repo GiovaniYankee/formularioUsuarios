@@ -4,12 +4,12 @@ const conexion = mysql.createConnection({
   host: 'localhost',
   database: 'sistema_educativo',
     user: 'root',
-    password: 'Coco1234'
+    password: 'Coco1234',
   // password: 'giovani95',
 
   //user: 'nodeuser',
   //password: 'miPassword123',
-
+  port: 3307
 });
 
 conexion.connect((error) => {
