@@ -5,7 +5,7 @@ const QRCode = require('qrcode'); // npm install qrcode
   
   // Configura tu correo y contraseña de aplicación aquí
   const EMAIL_USER = 'tic.ies9024@gmail.com';
-const EMAIL_PASS = 'mcpl xotk ssoc mncj';
+const EMAIL_PASS = 'hqgr owjd girh puvb';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
+const asunto = "Confirmación de inscripción - 6° Jornada de Educación Técnica";
 // --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
   const materia = req.query.materia;
@@ -87,7 +87,7 @@ Para registrar su asistencia, por favor presente el siguiente código QR al mome
 
 [Insertar código QR aquí]
 
-📅 Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes`,
+📅 Nos vemos el día 7 de noviembre en una jornada de intercambios y aprendizajes`,
       mensaje2: "adios",
       QR: qr,
       Certificacion: ""
