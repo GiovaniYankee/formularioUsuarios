@@ -74,12 +74,12 @@ async function crearOActualizarRegistrosAsistencia() {
       AE: " ",
       noti1: "",
       notiF: "",
-      mensaje1: `14° Congreso de Educación Integral – 2025
-¡Su inscripción al 14° Congreso de Educación Integral ha sido validada con éxito!
+      mensaje1: `6° Jornada de Educación Técnica – 2025
+¡Su inscripción a la 6° Jornada de Educación Técnica ha sido validada con éxito!
 
 Estimado/a ${insc.apellido} ${insc.nombre}:
 
-Este correo confirma que sus datos han sido validados correctamente para participar del 14° Congreso de Educación Integral: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.
+Este correo confirma que sus datos han sido validados correctamente para participar de la 6° Jornada de Educación Técnica: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.
 
 📌 Recuerde que el taller seleccionado es: ${insc.materia}.
 
@@ -136,10 +136,10 @@ function esCorreoValido(correo) {
 }
 
 async function enviarCorreoAsistencia(insc, curricula) {
-  const asunto = "Confirmación de inscripción - 14° Congreso de Educación Integral";
+  const asunto = "Confirmación de inscripción - 6° Jornada de Educación Técnica";
   let contenidoQR = '';
   let mailOptions = {
-    from: '"Congreso Educación Integral" <usuario@tuservidor.com>',
+    from: '"Jornada de Educación Técnica" <usuario@tuservidor.com>',
     to: insc.correo,
     subject: asunto
   };
@@ -150,27 +150,27 @@ async function enviarCorreoAsistencia(insc, curricula) {
       Ir a clase de YouTube
     </a>`;
     mailOptions.html = `
-      <p>14° Congreso de Educación Integral – 2025<br>
-      <b>¡Su inscripción al 14° Congreso de Educación Integral ha sido validada con éxito!</b></p>
+      <p>6° Jornada de Educación Técnica – 2025<br>
+      <b>¡Su inscripción a la 6° Jornada de Educación Técnica ha sido validada con éxito!</b></p>
       <p>Estimado/a <b>${insc.apellido} ${insc.nombre}</b>:</p>
-      <p>Este correo confirma que sus datos han sido validados correctamente para participar del 14° Congreso de Educación Integral: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.</p>
+      <p>Este correo confirma que sus datos han sido validados correctamente para participar de la 6° Jornada de Educación Técnica: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.</p>
       <p>📌 <b>Recuerde que el taller seleccionado es:</b> ${insc.materia}.</p>
       <p>Para registrar su asistencia, por favor ingrese a la siguiente clase virtual:</p>
       <p>${contenidoQR}</p>
-      <p>📅 Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes.</p>
+      <p>📅 Nos vemos el día 7 de noviembre en una jornada de intercambios y aprendizajes.</p>
     `;
   } else {
     // Para otras materias, envía el QR como imagen adjunta
     contenidoQR = `<img src="cid:qrimage" alt="Código QR" style="width:250px;height:250px;">`;
     mailOptions.html = `
-      <p>14° Congreso de Educación Integral – 2025<br>
-      <b>¡Su inscripción al 14° Congreso de Educación Integral ha sido validada con éxito!</b></p>
+      <p>6° Jornada de Educación Técnica – 2025<br>
+      <b>¡Su inscripción a la 6° Jornada de Educación Técnica ha sido validada con éxito!</b></p>
       <p>Estimado/a <b>${insc.apellido} ${insc.nombre}</b>:</p>
-      <p>Este correo confirma que sus datos han sido validados correctamente para participar del 14° Congreso de Educación Integral: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.</p>
+      <p>Este correo confirma que sus datos han sido validados correctamente para participar de la 6° Jornada de Educación Técnica: “Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”.</p>
       <p>📌 <b>Recuerde que el taller seleccionado es:</b> ${insc.materia}.</p>
       <p>Para registrar su asistencia, por favor presente el siguiente código QR al momento de la acreditación el día de la jornada:</p>
       <p>${contenidoQR}</p>
-      <p>📅 Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes.</p>
+      <p>📅 Nos vemos el día 7 de noviembre en una jornada de intercambios y aprendizajes.</p>
     `;
     if (curricula.QR) {
       mailOptions.attachments = [{

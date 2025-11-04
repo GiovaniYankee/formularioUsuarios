@@ -569,7 +569,7 @@ async function guardarInscripcion() {
   const data = await res.json();
   if (res.ok) {
     // Mostrar el monto a pagar en etapa 3
-    document.getElementById('montoPagar').innerText = `Monto a pagar total: $${data.cuotaFinal}. Recuerde Aplicar el descuento correspondiente a su situacion referenciado en el cuadro`;
+    document.getElementById('montoPagar').innerText = `Por Favor Recuerde Completar el Monto total que abono y Cargar el Comprobante de Pago según su situación academica:  ${data.cuotaFinal}`;
     // Guardar el idformapago en un input oculto
     let hidden = document.getElementById('idformapago');
     if (!hidden) {

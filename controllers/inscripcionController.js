@@ -1,4 +1,3 @@
-
 const conexion = require('../database/db');
 
 exports.vistaInscripcion = (req, res) => {
@@ -7,7 +6,7 @@ exports.vistaInscripcion = (req, res) => {
     'SELECT * FROM tipopersona',
     'SELECT * FROM persona',
     'SELECT * FROM pais',
-    'SELECT * FROM facultad',
+    'SELECT * FROM facultad WHERE habilitado!=0',
     'SELECT * FROM materia',
     'SELECT * FROM tipofacultad',
     'SELECT * FROM resolucion',
@@ -21,17 +20,23 @@ exports.vistaInscripcion = (req, res) => {
       })
     )
   ))
-  .then(([provincias, tipoP, personas, paises, facultades]) => {
+  .then((results) => {
+    // desestructurar en el mismo orden de 'queries' arriba
+    const [provincias, tipoP, personas, paises, facultades, materias, tipoFacultad, resoluciones] = results;
     res.render('inscripcionUsuario', {
       provincias,
       tipoP,
       personas,
       paises,
       facultades,
+      materias,
+      tipoFacultad,
+      resoluciones
     });
   })
   .catch(error => {
-    throw error;
+    console.error('ERROR vistaInscripcion:', error);
+    return res.status(500).send('Error cargando la vista de inscripción');
   });
 };
 // Ruta para buscar persona por DNI y tipo
@@ -106,10 +111,14 @@ exports.guardarInscripcion = async (req, res) => {
 
       const tipoFacultadId = facultadRows[0].tipoFacultad_idtipoFacultad;
 
-    // Buscar datos de importe para la facultad seleccionada
+    // Buscar datos de importe para la facultad seleccionada usando el id de facultad (detalle en concepto)
     const [importes] = await conexion.promise().query(
-      'SELECT idimporte, montopesos, cantidadCuota FROM importe WHERE tipoFacultad_idtipoFacultad = ? LIMIT 1',
-      [tipoFacultadId]
+      `SELECT imp.idimporte, imp.montopesos, imp.cantidadCuota, imp.concepto_idconcepto
+       FROM importe imp
+       JOIN concepto c ON imp.concepto_idconcepto = c.idconcepto
+       WHERE c.detalle = ?
+       LIMIT 1`,
+      [idfacultad]
     );
     if (!importes.length) {
       return res.status(400).json({ msg: 'No se encontró importe para el evento seleccionado.' });
@@ -244,7 +253,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Ruta para finalizar inscripción y guardar recibo con comprobante JSON
+// Ruta para finalizar inscripción y guardar recibo with comprobante JSON
 exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) => {
   const { metodoPago, montoPagado, idformapago } = req.body;
   const detalle = null;
@@ -286,6 +295,18 @@ exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) =
       [idinscripcion]
     );
 
+    // Obtener facultad de la inscripción para decidir asunto del correo
+    const [inscFacRows] = await conexion.promise().query(
+      'SELECT facultad_idfacultad FROM inscripcion WHERE idinscripcion = ? LIMIT 1',
+      [idinscripcion]
+    );
+    const facultadId = inscFacRows[0] ? inscFacRows[0].facultad_idfacultad : null;
+    // asunto por defecto, si facultad id = 4 usar otro título
+    let asuntoCorreo = '6° Jornada de Educación Técnica – 2025';
+    if (facultadId === 4 || facultadId == '4') {
+      asuntoCorreo = 'IA: Herramientas clave para la práctica docente';
+    }
+
     // 5. Buscar el correo electrónico de la persona
     const [personaRows] = await conexion.promise().query(
       'SELECT correo, nombre FROM persona WHERE idpersona = ?',
@@ -294,16 +315,25 @@ exports.finalizarInscripcion = [upload.single('comprobante'), async (req, res) =
     if (personaRows.length > 0) {
       const correo = personaRows[0].correo;
       const nombre = personaRows[0].nombre;
-      // Enviar correo de confirmación
-      await enviarCorreo(
-        correo,
-        '14° Congreso de Educación Integral – 2025',
-        nombre
-      );
+
+      // validar correo básico antes de intentar enviar
+      const esCorreoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c) && !c.includes('..');
+      if (esCorreoValido(correo)) {
+        try {
+          // pasar asunto dinámico y facultadId para elegir cuerpo correcto
+          await enviarCorreo(correo, asuntoCorreo, nombre, '', '', facultadId);
+        } catch (err) {
+          console.error('Error al enviar correo de confirmación:', err);
+          // no abortar la operación por fallo de correo
+        }
+      } else {
+        console.warn('Correo inválido, no se envía:', correo);
+      }
     }
 
-    res.json({ msg: 'Recibo guardado, comprobante subido, habilitación actualizada y correo enviado. Revise monto, solo ingrese números.', redirect: 'https://ies9024-infd.mendoza.edu.ar/sitio/' });
+    res.json({ msg: 'Recibo guardado, comprobante subido, habilitación actualizada. Revise monto, solo ingrese números.', redirect: 'https://ies9024-infd.mendoza.edu.ar/sitio/' });
   } catch (err) {
+    console.error('ERROR finalizarInscripcion:', err);
     res.status(500).json({ msg: 'Error al guardar recibo, actualizar inscripción o enviar correo.' });
   }
 }];
@@ -314,11 +344,19 @@ const e = require('express');
 
 // Configura tu correo y contraseña de aplicación aquí
 const EMAIL_USER = 'tic.ies9024@gmail.com'; // Cambia por tu correo real
-const EMAIL_PASS = 'mcpl xotk ssoc mncj'; // Cambia por tu contraseña de aplicación
+const EMAIL_PASS = 'hqgr owjd girh puvb'; // Cambia por tu contraseña de aplicación
 
 // Función para enviar correo electrónico con mensaje personalizado y presentable
-async function enviarCorreo(destinatario, asunto, nombrePersona) {
-  let transporter = nodemailer.createTransport({
+async function enviarCorreo(destinatario, asunto, nombrePersona, nombreTaller = '', qrCodeUrl = '', facultadId) {
+  // Validación básica de correo
+  const esCorreoValido = (c) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c) && !c.includes('..');
+  if (!destinatario || !esCorreoValido(destinatario)) {
+    console.warn('Correo inválido o vacío, no se envía:', destinatario);
+    return;
+  }
+
+  // Crear transporter localmente (evita dependencia de variable global no definida)
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: EMAIL_USER,
@@ -326,44 +364,106 @@ async function enviarCorreo(destinatario, asunto, nombrePersona) {
     }
   });
 
-  const mensajeHtml = `
+  // Mensaje específico para facultad 4
+  if (facultadId == 4 || facultadId === '4') {
+    var mensajeHtml = `
     <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 24px;">
       <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e0e0; padding: 32px 24px;">
-        <img src="https://ies9024-infd.mendoza.edu.ar/sitio/wp-content/uploads/2025/08/zocalo-mensaje.png" alt='Congreso Educación Integral' style='width:100%; max-width:400px; display:block; margin:auto; border-radius:8px;'>
-        <h2 style="color: #0dcaf0; text-align:center; margin-top: 24px;">14° Congreso de Educación Integral – 2025</h2>
-        <p style="font-size: 1.1rem; color: #222;">¡Su inscripción al <b>14° Congreso de Educación Integral</b> ha sido exitosa!</p>
-        <p style="font-size: 1.1rem; color: #222;">Estimado/a <b>${nombrePersona}</b>:</p>
-        <p style="font-size: 1.1rem; color: #222;">Este correo es la confirmación de que su inscripción al 14° Congreso de Educación Integral: <b>“Desafíos de la formación y actualización docente en los contextos actuales: análisis y algunas propuestas”</b> ha sido registrada correctamente.</p>
-        <p style="font-size: 1.1rem; color: #222;">A continuación, compartimos el cronograma general del evento con los diferentes momentos para que pueda organizar su participación.<br>
-        También le compartimos la Resolución de Puntaje del mismo.<br>
-	
-	<ul style="font-size: 1rem; margin-top: 8px;">
- 	 <li>
-    📄	 <a href="https://drive.google.com/file/d/1hJKs756zA8o7satvFJQs_3Ojs_SarBO5/view?usp=drive_link" target="_blank">
-     	 Descargar Cronograma
-   	 </a>
- 	 </li>
- 	 <li>
-    📑	 <a href="https://drive.google.com/file/d/1FsQ500n23nqGE9Tnt6pPbYsBAt1OrlbA/view?usp=drive_link" target="_blank">
-     	 Descargar Resolución de Puntaje
-   	 </a>
- 	 </li>
-	</ul>
-
-        Además, queremos comentar que hemos recibido la declaración de interés tanto departamental como provincial de nuestro congreso. La misma será entregada el día de realización de las actividades.</p>
-        <p style="font-size: 1.1rem; color: #0a6fa6; font-weight: bold;">¡Nos vemos el día 5 de septiembre en una jornada de intercambios y aprendizajes!</p>
-        <hr style="margin: 32px 0;">
-        <p style="font-size: 0.95rem; color: #888; text-align:center;">Este correo fue generado automáticamente. No responda a este mensaje.</p>
+        <h2 style="color:#0a6fa6; text-align:center;">IA: Herramientas clave para la práctica docente</h2>
+        <p>Estimado/a <b>${nombrePersona || ''}</b>,</p>
+        <p>Su inscripción al módulo <b>IA: Herramientas clave para la práctica docente</b> ha sido validada correctamente.</p>
+        <p>Próximos pasos:</p>
+        <ul>
+          <li>Se debe completar el cupo de 30 participantes como mínimo.</li>
+          <li>Una vez completado el cupo, se enviará más información.</li>
+          <li>para más detalles, visite nuestra <a href="https://ies9024-infd.mendoza.edu.ar/sitio/" target="_blank">página web.</a>.</li>
+        </ul>
+        ${ qrCodeUrl ? `<div style="text-align:center;"><img src="${qrCodeUrl}" alt="QR" style="width:140px;height:140px;"></div>` : '' }
+        <p style="font-size:0.95rem;color:#666;margin-top:18px;">
+          Si tiene preguntas, contacte al siguiente correo ies9024congresoalfalit@gmail.com 
+        </p>
+        <hr style="margin-top:20px;">
+        <p style="font-size:0.85rem;color:#888;text-align:center;">
+          Este correo fue generado automáticamente. No responda a este mensaje.
+        </p>
       </div>
     </div>
-  `;
+    `;
+  } else {
+    // Mensaje por defecto (mantengo tu plantilla anterior)
+    var mensajeHtml = `
+    <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 24px;">
+      <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e0e0; padding: 32px 24px;">
+        
+        <img src="https://ies9024-infd.mendoza.edu.ar/sitio/wp-content/uploads/2025/11/banner-jornada.png" 
+             alt="Jornada de Educación Técnica" 
+             style="width:100%; max-width:400px; display:block; margin:auto; border-radius:8px;">
+        
+        <h2 style="color: #0dcaf0; text-align:center; margin-top: 24px;">
+          6° Jornada de Educación Técnica – 2025
+        </h2>
+        
+        <p style="font-size: 1.1rem; color: #222;">
+          ¡Su inscripción a la <b>6° Jornada de Educación Técnica</b> ha sido validada con éxito!
+        </p>
+        
+        <p style="font-size: 1.1rem; color: #222;">
+          Estimado/a <b>${nombrePersona || ''}</b>:
+        </p>
+        
+        <p style="font-size: 1.1rem; color: #222;">
+          Sus <b>datos han sido validados correctamente</b> para participar en la 
+          <b>6° Jornada de Educación Técnica: “La formación técnica en el mundo laboral actual: una mirada para proyectar el futuro”</b>.
+        </p>
+        
+        ${ nombreTaller ? `<p style="font-size: 1.1rem; color: #0a6fa6; font-weight: bold; margin-top: 16px;">
+          📌 Recuerde que el taller seleccionado es:<br>
+          <span style="color:#222; font-weight: normal;">${nombreTaller}</span>
+        </p>` : '' }
+        
+        ${ qrCodeUrl ? `<div style="text-align:center; margin: 20px 0;">
+          <img src="${qrCodeUrl}" alt="Código QR de acreditación" 
+               style="width:160px; height:160px; display:inline-block; border: 2px solid #eee; border-radius: 8px; padding: 8px;">
+        </div>` : '' }
+        
+        <p style="font-size: 1.1rem; color: #222;">
+          A continuación, compartimos el cronograma general del evento:
+        </p>
+        
+        <ul style="font-size: 1rem; margin-top: 8px;">
+          <li>
+            📄 <a href="https://drive.google.com/file/d/1HE_LPUGrR0P6tKmRykc49xc8mAHioqq1/view?usp=sharing" target="_blank">
+              Descargar Cronograma
+            </a>
+          </li>
+        </ul>
+        
+        <p style="font-size: 1.1rem; color: #0a6fa6; font-weight: bold;">
+          📅 ¡Nos vemos el día 7 de noviembre en una jornada de experiencias, aprendizajes y formación técnica!
+        </p>
+        
+        <hr style="margin: 32px 0;">
+        <p style="font-size: 0.95rem; color: #888; text-align:center;">
+          Este correo fue generado automáticamente. No responda a este mensaje.
+        </p>
+      </div>
+    </div>
+    `;
+  }
 
-  let mailOptions = {
+  const mailOptions = {
     from: EMAIL_USER,
     to: destinatario,
     subject: asunto,
     html: mensajeHtml
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Correo enviado a:', destinatario, 'messageId:', info.messageId);
+    return info;
+  } catch (err) {
+    console.error('Error enviando correo a:', destinatario, err);
+    throw err;
+  }
 }
