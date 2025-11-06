@@ -20,6 +20,18 @@
           <% }); %>
         <% } %>
       </select>
+
+      <!-- FILTRO POR FACULTAD -->
+      <label for="filtro-facultad" style="margin-left:12px;"><b>Filtrar por Evento:</b></label>
+      <select id="filtro-facultad" name="facultad" style="padding:6px; border-radius:6px;">
+        <option value="todas" <%= facultadSeleccionada === 'todas' ? 'selected' : '' %>>Todas</option>
+        <% if (facultades && facultades.length > 0) { %>
+          <% facultades.forEach(function(f) { %>
+            <option value="<%= f.idfacultad %>" <%= facultadSeleccionada == f.idfacultad ? 'selected' : '' %>><%= f.nombreFacultad %></option>
+          <% }); %>
+        <% } %>
+      </select>
+
       <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
     </form>
 

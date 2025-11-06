@@ -18,27 +18,83 @@ const transporter = nodemailer.createTransport({
 const asunto = "Confirmación de inscripción - 6° Jornada de Educación Técnica";
 // --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
-  const materia = req.query.materia;
-  const [materias] = await conexion.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
+  const materia = req.query.materia || 'todas';
+  const facultad = req.query.facultad || 'todas';
+
+  // Detectar cualquier columna en 'materia' que contenga la palabra 'facultad'
+  let materiaFacultadCol = null;
+  try {
+    const [cols] = await conexion.promise().query('SHOW COLUMNS FROM materia');
+    for (const c of cols) {
+      if (String(c.Field).toLowerCase().includes('facultad')) {
+        materiaFacultadCol = c.Field;
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn('No se pudo inspeccionar columnas de materia:', err && err.code ? err.code : err);
+  }
+
+  // Traer materias incluyendo la columna detectada si existe
+  let selectCols = 'idmateria, materia';
+  if (materiaFacultadCol) selectCols += `, ${materiaFacultadCol}`;
+  const [materiasRows] = await conexion.promise().query(`SELECT ${selectCols} FROM materia ORDER BY materia ASC`);
+  const materias = materiasRows;
+
+  // traer facultades para el select
+  const [facultades] = await conexion.promise().query('SELECT idfacultad, nombreFacultad FROM facultad ORDER BY nombreFacultad ASC');
+
+  // construir consulta con JOINs/condiciones según la columna detectada (sin hardcodear nombres)
   let query = `
-    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono , p.numDocumento, m.materia, 
-           CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) AS idmateria
+    SELECT r.*, p.apellido, p.nombre, p.correo, p.telefono, p.numDocumento, m.materia
+    ${materiaFacultadCol ? `, m.${materiaFacultadCol} AS materia_${materiaFacultadCol}` : ''}
     FROM registroasisten r
     LEFT JOIN inscripcion i ON r.inscripcion_idinscripcion = i.idinscripcion
     LEFT JOIN persona p ON i.persona_idpersona = p.idpersona
     LEFT JOIN materia m ON CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, '$.idmateria')) AS UNSIGNED) = m.idmateria
+    ${materiaFacultadCol ? `LEFT JOIN facultad f ON m.${materiaFacultadCol} = f.idfacultad` : ''}
+    WHERE 1=1
   `;
-  let params = [];
+  const params = [];
+
   if (materia && materia !== 'todas') {
-    query += ' WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, \'$.idmateria\')) AS UNSIGNED) = ?';
+    query += ' AND CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, \'$.idmateria\')) AS UNSIGNED) = ?';
     params.push(materia);
   }
-  // Ordena por apellido y nombre
-  query += ' ORDER BY p.apellido ASC, p.nombre ASC';
-  const [asistencias] = await conexion.promise().query(query, params);
-  res.render('asistencia', { asistencias, materias, materiaSeleccionada: materia || 'todas' });
-crearOActualizarRegistrosAsistencia();
 
+  if (facultad && facultad !== 'todas') {
+    if (materiaFacultadCol) {
+      query += ` AND m.${materiaFacultadCol} = ?`;
+      params.push(facultad);
+    } else {
+      // fallback: filtrar por idfacultad dentro del JSON de inscripcion si existe
+      query += ' AND CAST(JSON_UNQUOTE(JSON_EXTRACT(i.detalle, \'$.idfacultad\')) AS UNSIGNED) = ?';
+      params.push(facultad);
+    }
+  }
+
+  query += ' ORDER BY p.apellido ASC, p.nombre ASC';
+
+  const [asistencias] = await conexion.promise().query(query, params);
+
+  // filtrar lista de materias para el select si detectamos la columna de facultad
+  let materiasParaEnviar = materias;
+  if (facultad && facultad !== 'todas' && materiaFacultadCol) {
+    materiasParaEnviar = materias.filter(m => String(m[materiaFacultadCol]) === String(facultad));
+  }
+
+  console.log('Filtro facultad:', facultad, 'col detectada en materia:', materiaFacultadCol);
+  console.log('Materias devueltas para select:', materiasParaEnviar.length);
+
+  res.render('asistencia', {
+    asistencias,
+    materias: materiasParaEnviar,
+    facultades,
+    materiaSeleccionada: materia || 'todas',
+    facultadSeleccionada: facultad || 'todas'
+  });
+
+  crearOActualizarRegistrosAsistencia();
 }
 
 async function crearOActualizarRegistrosAsistencia() {

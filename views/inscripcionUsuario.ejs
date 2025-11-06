@@ -588,26 +588,22 @@ async function guardarInscripcion() {
 }
 
 function mostrarPago() {
-  const pago = document.querySelector('input[name="formaPago"]:checked').value;
+  const pago = document.querySelector('input[name="formaPago"]:checked')?.value;
   const div = document.getElementById('opcionesPago');
+  // limpiar cualquier form anterior
   div.innerHTML = '';
 
   if (pago === 'transferencia') {
     div.innerHTML = `
       <div class="pago-transferencia-info">
-        <p><strong>Alias:</strong> COOPERADORAIES9024</p>
-        <p><strong>CBU:</strong> 1910315455031501206482</p>
-        <p><strong>A nombre de:</strong> A Civ Coop Ies 9 024 Lavalle</p>
-        <p><strong>Cuil:</strong> 30-71742903-2</p>
-        <p><strong>Banco:</strong> Credicoop</p>
         <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
           <div class="mb-2">
             <label for="montoPagado" class="form-label">Ingrese Monto Pagado acorde con su situación referenciado en el cuadro:</label>
-            <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
+            <input type="number" name="montoPagado" id="montoPagado" class="form-control" required min="0" step="0.01">
           </div>
           <div class="mb-2">
-            <label for="comprobante" class="form-label">Recuerde cargar el comprobante de pago:</label>
-            <input type="file" name="comprobante" id="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="form-control" required>
+            <label for="comprobante" class="form-label">Recuerde cargar el comprobante de pago (imagen/pdf):</label>
+            <input type="file" name="comprobante" id="comprobante" accept="image/*,.pdf" class="form-control" required>
           </div>
           <button type="button" class="btn btn-success w-100" onclick="finalizarInscripcion()">Finalizar inscripción</button>
         </form>
@@ -616,20 +612,14 @@ function mostrarPago() {
   } else if (pago === 'efectivo') {
     div.innerHTML = `
       <div class="pago-efectivo-info">
-        <ol>
-          <li><strong>Acérquese a la institución:DOCTOR MORENO Y FLEMING - LAVALLE </strong> </li>
-          <li><strong>Realice el pago en la oficina de tesorería del IES 9-024.</strong></li>
-          <li><strong>Cargue el recibo entregado en tesorería:</strong></li>
-        </ol>
         <form id="formRecibo" enctype="multipart/form-data" class="mt-2">
           <div class="mb-2">
-            <label for="montoPagado" class="form-label">Ingrese Monto Pagado acorde con su situación referenciado en el cuadro:</label>
-            <label for="montoPagado" class="form-label"> ingrese Números</label>
-            <input type="text" name="montoPagado" id="montoPagado" class="form-control" required>
+            <label for="montoPagado" class="form-label">Ingrese Monto Pagado acorde con su situación referenciado en el cuadro (solo números):</label>
+            <input type="number" name="montoPagado" id="montoPagado" class="form-control" required min="0" step="0.01">
           </div>
           <div class="mb-2">
-            <label for="comprobante" class="form-label">Cargue el recibo de pago:</label>
-            <input type="file" name="comprobante" id="comprobante" accept=".pdf,.jpg,.jpeg,.png" class="form-control" required>
+            <label for="comprobante" class="form-label">Cargue el comprobante de pago (imagen/pdf):</label>
+            <input type="file" name="comprobante" id="comprobante" accept="image/*,.pdf" class="form-control" required>
           </div>
           <button type="button" class="btn btn-success w-100" onclick="finalizarInscripcion()">Finalizar inscripción</button>
         </form>
@@ -639,63 +629,75 @@ function mostrarPago() {
 }
 
 async function finalizarInscripcion() {
-  // Obtener método de pago seleccionado
-  const metodoPago = document.querySelector('input[name="formaPago"]:checked')?.value;
-  if (!metodoPago) {
-    alert('Seleccione una forma de pago.');
-    return;
-  }
-
-  // Obtener el formulario y los campos
-  const form = document.getElementById('formRecibo');
-  const montoPagado = form.querySelector('#montoPagado')?.value;
-  const comprobante = form.querySelector('#comprobante')?.files[0];
-  const idpersona = document.getElementById('idpersona').value;
-  const idformapago = document.getElementById('idformapago')?.value;
-
-  if (!montoPagado || !comprobante || !idformapago) {
-    alert('Complete todos los campos y cargue el comprobante.');
-    return;
-  }
-
-  // Deshabilitar el botón para evitar envíos múltiples
-  const btn = form.querySelector('button[type="button"]');
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
-  // Crear FormData y agregar los campos
-  const formData = new FormData();
-  formData.append('metodoPago', metodoPago);
-  formData.append('montoPagado', montoPagado);
-  formData.append('comprobante', comprobante);
-  formData.append('idpersona', idpersona);
-  formData.append('idformapago', idformapago);
-
   try {
+    const metodoPago = document.querySelector('input[name="formaPago"]:checked')?.value;
+    if (!metodoPago) return alert('Seleccione una forma de pago.');
+
+    // buscar el form dentro del contenedor (no confiar solo en id)
+    const form = document.getElementById('formRecibo') || document.querySelector('#opcionesPago form');
+    if (!form) return alert('Formulario de pago no encontrado. Por favor seleccione forma de pago nuevamente.');
+
+    const montoInput = form.querySelector('input[name="montoPagado"]');
+    const fileInput = form.querySelector('input[name="comprobante"]');
+
+    const montoPagado = montoInput?.value;
+    const comprobanteFile = fileInput?.files[0];
+    const idpersona = document.getElementById('idpersona').value;
+    const idformapago = document.getElementById('idformapago')?.value;
+
+    if (!montoPagado || !comprobanteFile || !idformapago) {
+      return alert('Complete todos los campos y cargue el comprobante.');
+    }
+
+    // validaciones extra para móvil
+    // tamaño máximo 10 MB (ajusta según servidor)
+    const MAX_BYTES = 10 * 1024 * 1024;
+    if (comprobanteFile.size > MAX_BYTES) {
+      return alert('El archivo es demasiado grande. Máximo 10 MB.');
+    }
+
+    // mostrar info para debugging si falla desde móvil
+    console.log('FinalizarInscripcion - archivo:', comprobanteFile.name, comprobanteFile.type, comprobanteFile.size);
+
+    // deshabilitar botón
+    const btn = form.querySelector('button[type="button"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+    }
+
+    const formData = new FormData();
+    formData.append('metodoPago', metodoPago);
+    formData.append('montoPagado', montoPagado);
+    formData.append('comprobante', comprobanteFile);
+    formData.append('idpersona', idpersona);
+    formData.append('idformapago', idformapago);
+
     const res = await fetch('/IES_9-024/inscripcion/finalizar', {
       method: 'POST',
       body: formData
     });
+
     const data = await res.json();
+
     if (res.ok) {
       document.getElementById('mensajeFinal').style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
-  document.getElementById('mensajeFinal').style.display = 'none';
-}, 20000); // 20000 milisegundos = 20 segundos
-
-      if (data.redirect) {
-        window.location.href = data.redirect;
-      }
+        document.getElementById('mensajeFinal').style.display = 'none';
+      }, 20000);
+      if (data.redirect) window.location.href = data.redirect;
     } else {
       alert(data.msg || 'Error al finalizar inscripción');
-      btn.disabled = false;
-      btn.textContent = 'Finalizar inscripción';
+      if (btn) { btn.disabled = false; btn.textContent = 'Finalizar inscripción'; }
     }
   } catch (err) {
+    console.error('Error en finalizarInscripcion:', err);
     alert('Error de conexión al finalizar inscripción');
-    btn.disabled = false;
-    btn.textContent = 'Finalizar inscripción';
+    // re-habilitar botón en caso de excepción
+    const form = document.getElementById('formRecibo') || document.querySelector('#opcionesPago form');
+    const btn = form?.querySelector('button[type="button"]');
+    if (btn) { btn.disabled = false; btn.textContent = 'Finalizar inscripción'; }
   }
 }
 

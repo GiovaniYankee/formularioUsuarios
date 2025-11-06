@@ -72,11 +72,12 @@
     <div style="margin: 24px 0;">
       <label for="filtro-acred" style="font-weight:bold;">Tipo de acreditación:</label>
       <select id="filtro-acred" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
-        <option value="A1">Acreditación General</option>
-        <option value="AE">Evaluación Final</option>
-        <% if (materias && materias.length > 0) { %>
+        <option value="A1">Acreditación</option>
+        <option value="AE">Acreditación Extra</option>
+        <% if (typeof materias !== 'undefined' && materias.length > 0) { %>
           <% materias.forEach(function(m) { %>
-            <option value="AT-<%= m.idmateria %>"><%= m.materia %></option>
+            <!-- Si ya filtraste en el controller, todas son habilitadas -->
+            <option value="<%= m.idmateria %>"><%= m.materia %></option>
           <% }); %>
         <% } %>
       </select>

@@ -7,8 +7,38 @@ const conexion = require('../database/db');
 
 
 exports.vistaLector = async (req, res) => {
-  const [materias] = await db.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
-  res.render('lector', { materias });
+  try {
+    // detectar columna de habilitado en la tabla materia
+    const [cols] = await db.promise().query('SHOW COLUMNS FROM materia');
+    let habilCol = null;
+    for (const c of cols) {
+      const f = String(c.Field).toLowerCase();
+      if (f.includes('habilit') || f === 'activo' || f.includes('activo') || f.includes('enabled')) {
+        habilCol = c.Field;
+        break;
+      }
+    }
+
+    // construir SELECT y filtrar solo habilitadas si existe la columna
+    let selectCols = 'idmateria, materia';
+    if (habilCol) selectCols += `, ${habilCol}`;
+    let sql = `SELECT ${selectCols} FROM materia`;
+    if (habilCol) sql += ` WHERE ${habilCol} IN (1, '1', true)`;
+    sql += ' ORDER BY materia ASC';
+
+    const [materiasRows] = await db.promise().query(sql);
+    const materias = materiasRows || [];
+    res.render('lector', { materias });
+  } catch (err) {
+    console.error('vistaLector error:', err);
+    // fallback: intentar devolver todas las materias; si falla, enviar arreglo vacío
+    try {
+      const [materiasRows] = await db.promise().query('SELECT idmateria, materia FROM materia ORDER BY materia ASC');
+      res.render('lector', { materias: materiasRows || [] });
+    } catch (e2) {
+      res.render('lector', { materias: [] });
+    }
+  }
 };
 
 exports.buscarPorInscripcion = async (req, res) => {
