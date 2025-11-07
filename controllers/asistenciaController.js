@@ -15,6 +15,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Verificar transporter al iniciar para obtener errores tempranos
+transporter.verify()
+  .then(() => console.log('Transporter SMTP listo para enviar correos'))
+  .catch(err => console.error('Error verificando transporter SMTP:', err && err.message ? err.message : err));
+
 const asunto = "Confirmación de inscripción - 6° Jornada de Educación Técnica";
 // --- PRIMERO define la función ---
 async function vistaAsistencia(req, res) {
@@ -195,7 +200,8 @@ async function enviarCorreoAsistencia(insc, curricula) {
   const asunto = "Confirmación de inscripción - 6° Jornada de Educación Técnica";
   let contenidoQR = '';
   let mailOptions = {
-    from: '"Jornada de Educación Técnica" <usuario@tuservidor.com>',
+    // Usa el mismo usuario autenticado como remitente para evitar rechazos
+    from: `"Jornada de Educación Técnica" <${EMAIL_USER}>`,
     to: insc.correo,
     subject: asunto
   };
@@ -229,12 +235,17 @@ async function enviarCorreoAsistencia(insc, curricula) {
       <p>📅 Nos vemos el día 7 de noviembre en una jornada de intercambios y aprendizajes.</p>
     `;
     if (curricula.QR) {
-      mailOptions.attachments = [{
-        filename: 'qr.png',
-        content: curricula.QR.split("base64,")[1],
-        encoding: 'base64',
-        cid: 'qrimage'
-      }];
+      // Asegurarse de pasar un Buffer con los datos decodificados en base64
+      const base64data = typeof curricula.QR === 'string' ? curricula.QR.split('base64,')[1] : null;
+      if (base64data) {
+        mailOptions.attachments = [{
+          filename: 'qr.png',
+          content: Buffer.from(base64data, 'base64'),
+          cid: 'qrimage'
+        }];
+      } else {
+        console.warn('Curricula.QR no tiene formato esperado para idinscripcion=', insc.idinscripcion);
+      }
     }
   }
 
@@ -243,7 +254,13 @@ async function enviarCorreoAsistencia(insc, curricula) {
     return;
   }
 
-  await transporter.sendMail(mailOptions);
+  try {
+    console.log('Enviando correo a:', insc.correo, ' asunto:', asunto);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Correo enviado:', info && info.messageId ? info.messageId : info);
+  } catch (err) {
+    console.error('Error enviando correo a', insc.correo, ':', err && err.message ? err.message : err);
+  }
 }
 
 async function enviarCorreosPendientes() {
